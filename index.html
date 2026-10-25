@@ -4,14 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>طقس خربة أفيق - ذمار</title>
+    
+    <!-- الخطوط والأيقونات -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
             --bg-primary: #0a0e17;
             --bg-secondary: #131a26;
-            --bg-card: rgba(26, 35, 50, 0.85); /* شفافية خفيفة لبطاقات الطقس */
+            --bg-card: rgba(26, 35, 50, 0.85);
             --bg-card-hover: rgba(33, 45, 64, 0.95);
             --text-primary: #e8edf5;
             --text-secondary: #8b9bb4;
@@ -32,25 +37,38 @@
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
-            /* خلفية فلكية احترافية من رابط خارجي (Unplash) */
             background-image: 
-                linear-gradient(rgba(10, 14, 23, 0.85), rgba(10, 14, 23, 0.95)),
-                url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2000&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
+                linear-gradient(rgba(10, 14, 23, 0.9), rgba(10, 14, 23, 0.95)),
+                radial-gradient(circle at 50% 0%, #1a2332 0%, #0a0e17 70%);
             background-attachment: fixed;
         }
 
         .container { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
 
-        /* شريط التحذير اليومي */
-        .daily-warning {
+        /* تأثيرات الوميض للتحذيرات */
+        @keyframes blink-slow { 
+            0%, 100% { box-shadow: 0 0 15px rgba(231, 76, 60, 0.3); border-color: rgba(231, 76, 60, 0.6); } 
+            50% { box-shadow: none; border-color: var(--border-color); } 
+        }
+        @keyframes blink-fast { 
+            0%, 100% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.7); border-color: #e74c3c; background: rgba(231, 76, 60, 0.15); } 
+            50% { box-shadow: none; border-color: var(--border-color); background: var(--bg-card); } 
+        }
+        .blink-slow { animation: blink-slow 2s infinite ease-in-out; }
+        .blink-fast { animation: blink-fast 1s infinite ease-in-out; }
+        .warn-icon { color: #e74c3c; font-size: 1.1rem; margin-right: 5px; vertical-align: middle; animation: pulse 1.5s infinite; }
+
+        /* شريط التحذير اليومي ومربع الأرصاد */
+        .warning-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .daily-warning, .ncm-warning {
             display: flex; align-items: center; gap: 12px;
             background: var(--warning-bg); border: 2px solid var(--warning-border);
-            border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
+            border-radius: 12px; padding: 12px 16px;
             animation: blinkWarning 2s infinite ease-in-out;
-            box-shadow: 0 0 15px rgba(240, 192, 64, 0.2);
             backdrop-filter: blur(5px);
+        }
+        .ncm-warning {
+            animation: none; border-color: var(--accent-cyan); background: rgba(91, 192, 222, 0.1);
         }
         @keyframes blinkWarning {
             0%, 100% { opacity: 1; box-shadow: 0 0 15px rgba(240, 192, 64, 0.3); }
@@ -60,6 +78,7 @@
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .warning-content { flex: 1; }
         .warning-title { font-size: 0.85rem; font-weight: 700; color: #ffcc00; margin-bottom: 4px; }
+        .ncm-warning .warning-title { color: var(--accent-cyan); }
         .warning-text { font-size: 0.9rem; color: var(--text-primary); line-height: 1.4; }
 
         /* الهيدر */
@@ -69,7 +88,7 @@
         .header .coords { font-size: 0.8rem; color: var(--text-secondary); direction: ltr; font-family: monospace; opacity: 0.7; }
         .date-badge { display: inline-block; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 20px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; backdrop-filter: blur(4px); }
 
-        /* الشريط الفلكي والزراعي المدمج */
+        /* الشريط الفلكي */
         .astro-widget {
             display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;
             background: var(--bg-card); border: 1px solid var(--accent-gold);
@@ -82,100 +101,190 @@
         .astro-item span { color: var(--accent-cyan); }
         .astro-icon { font-size: 1.3rem; }
 
-        /* النوافذ المنبثقة (Modals) */
+        /* النوافذ المنبثقة العامة */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 1000;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000;
             justify-content: center; align-items: center;
         }
         .modal-overlay.active { display: flex; }
         .modal-content {
             background: var(--bg-secondary); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 24px; width: 90%; max-width: 500px;
-            max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow);
+            border-radius: 16px; padding: 20px; width: 95%; max-width: 1000px;
+            max-height: 92vh; overflow-y: auto; box-shadow: var(--shadow);
             position: relative;
         }
-        .modal-close { position: absolute; top: 15px; left: 15px; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; }
+        .modal-close { position: absolute; top: 15px; left: 15px; background: none; border: none; color: var(--text-secondary); font-size: 1.8rem; cursor: pointer; z-index: 10; }
+        .modal-close:hover { color: #fff; }
         .modal-title { font-size: 1.2rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 16px; text-align: center; }
-
-        /* محتوى النافذة الفلكية */
-        .astro-section { margin-bottom: 20px; }
-        .astro-section h4 { color: var(--accent-cyan); margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
-        .maqran-list { display: flex; flex-direction: column; gap: 8px; }
-        .maqran-card {
-            background: var(--bg-card); border-radius: 8px; padding: 10px;
-            border-right: 3px solid var(--accent-blue); display: flex; justify-content: space-between; align-items: center;
-        }
-        .maqran-card.prev { border-right-color: #e74c3c; opacity: 0.7; }
-        .maqran-card.next { border-right-color: var(--accent-gold); }
-        .maqran-info h5 { color: var(--text-primary); font-size: 0.9rem; margin-bottom: 4px; }
-        .maqran-info p { color: var(--text-secondary); font-size: 0.75rem; }
-        .maqran-days { font-weight: bold; color: var(--accent-gold); font-size: 0.9rem; text-align: left; }
 
         /* بطاقات الطقس */
         .section-title { font-size: 1.1rem; font-weight: 600; margin: 30px 0 14px; display: flex; align-items: center; gap: 8px; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-        .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .weather-grid { display: grid; grid-template-columns: 1.4fr 0.6fr; gap: 16px; align-items: start; }
         @media (max-width: 600px) { .weather-grid { grid-template-columns: 1fr; } }
-        .weather-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+        
+        .weather-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); backdrop-filter: blur(8px); transition: all 0.3s ease; }
+        .weather-card.tomorrow-card { padding: 12px; opacity: 0.9; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
         .card-header .day-label { font-size: 1rem; font-weight: 600; color: var(--accent-cyan); }
         .card-header .day-date { font-size: 0.8rem; color: var(--text-secondary); }
-        .temp-display { text-align: center; margin-bottom: 18px; }
+        .temp-display { text-align: center; margin-bottom: 15px; }
         .temp-main { font-size: 3rem; font-weight: 700; line-height: 1; }
+        .tomorrow-card .temp-main { font-size: 2rem; }
         .temp-main .unit { font-size: 1.2rem; color: var(--text-secondary); font-weight: 400; }
-        .temp-range { display: flex; justify-content: center; gap: 16px; margin-top: 8px; font-size: 0.9rem; color: var(--text-secondary); }
+        .temp-range { display: flex; justify-content: center; gap: 16px; margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary); }
         .temp-range .min { color: var(--accent-blue); }
         .temp-range .max { color: var(--accent-gold); }
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .detail-item { display: flex; align-items: center; gap: 8px; background: rgba(19, 26, 38, 0.8); border-radius: 10px; padding: 10px 12px; font-size: 0.82rem; }
-        .detail-item .detail-icon { font-size: 1.1rem; }
-        .detail-item .detail-info { display: flex; flex-direction: column; }
-        .detail-item .detail-label { color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 2px; }
-        .detail-item .detail-value { color: var(--text-primary); font-weight: 600; font-size: 0.85rem; }
         
-        /* المصادر */
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .tomorrow-card .details-grid { grid-template-columns: 1fr; }
+        .detail-item { display: flex; align-items: center; gap: 8px; background: rgba(19, 26, 38, 0.8); border-radius: 10px; padding: 8px 10px; font-size: 0.8rem; }
+        .detail-item .detail-icon { font-size: 1rem; }
+        .detail-item .detail-info { display: flex; flex-direction: column; }
+        .detail-item .detail-label { color: var(--text-secondary); font-size: 0.65rem; margin-bottom: 2px; }
+        .detail-item .detail-value { color: var(--text-primary); font-weight: 600; font-size: 0.8rem; }
+        
+        /* المصادر العالمية */
         .sources-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         @media (max-width: 600px) { .sources-grid { grid-template-columns: repeat(3, 1fr); } }
-        .source-btn { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 8px; text-align: center; cursor: pointer; transition: all 0.2s; color: var(--text-primary); font-family: 'Cairo', sans-serif; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(4px); }
-        .source-btn:active { transform: scale(0.95); }
-        .source-btn.active { border-color: var(--accent-cyan); background: var(--bg-card-hover); }
-        .source-btn .source-icon { font-size: 1.6rem; }
-        .source-btn .source-name { font-weight: 600; font-size: 0.75rem; }
+        .source-btn { 
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; 
+            padding: 15px 8px; text-align: center; cursor: pointer; transition: all 0.2s; 
+            color: var(--text-primary); font-family: 'Cairo', sans-serif; font-size: 0.8rem; 
+            display: flex; justify-content: center; align-items: center; 
+            backdrop-filter: blur(4px); min-height: 60px;
+        }
+        .source-btn:hover { background: var(--bg-card-hover); border-color: var(--accent-cyan); transform: translateY(-2px); }
+        .source-btn.active { border-color: var(--accent-cyan); background: var(--bg-card-hover); box-shadow: 0 0 10px rgba(91, 192, 222, 0.2); }
+        .source-name { font-weight: 700; font-size: 0.85rem; color: var(--accent-cyan); }
+
+        /* لوحة التوقعات 10 أيام */
+        .forecast-panel { display: none; margin-top: 20px; }
+        .forecast-panel.visible { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .forecast-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .forecast-header h3 { font-size: 1.1rem; color: var(--accent-cyan); }
+        .forecast-header .close-forecast { background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; }
         
-        /* التوقعات 10 أيام */
-        .forecast-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-top: 16px; display: none; backdrop-filter: blur(8px); }
-        .forecast-panel.visible { display: block; }
-        .forecast-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
-        .forecast-panel-header h3 { font-size: 1rem; font-weight: 600; color: var(--accent-cyan); }
-        .forecast-list { display: flex; flex-direction: column; gap: 8px; }
-        .forecast-row { display: grid; grid-template-columns: 70px 1fr 80px 80px 70px; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(19, 26, 38, 0.8); border-radius: 10px; font-size: 0.8rem; }
+        .forecast-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .forecast-row { 
+            display: grid; grid-template-columns: 80px 90px 70px 60px 60px 70px 60px; 
+            align-items: center; gap: 5px; padding: 12px; min-width: 550px;
+            background: var(--bg-card); border: 1px solid var(--border-color); 
+            border-radius: 12px; font-size: 0.75rem; backdrop-filter: blur(4px);
+        }
         .forecast-row .f-day { font-weight: 600; color: var(--accent-cyan); }
-        .forecast-row .f-date { color: var(--text-secondary); font-size: 0.75rem; }
-        .forecast-row .f-temp { color: var(--text-primary); font-weight: 600; text-align: center; }
-        .forecast-row .f-rain { color: var(--accent-blue); text-align: center; font-size: 0.75rem; }
-        .forecast-row .f-wind { color: var(--text-secondary); font-size: 0.72rem; text-align: center; }
+        .forecast-row .f-date { color: var(--text-secondary); font-size: 0.7rem; }
+        .forecast-row .f-val { text-align: center; font-weight: 600; }
+        .forecast-row .f-val span { font-size: 0.65rem; color: var(--text-secondary); display: block; font-weight: normal; }
+        
+        .line-chart-container { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; margin-bottom: 15px; backdrop-filter: blur(8px); }
+        .line-chart-container h4 { text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 10px; }
+        .line-chart-wrapper { position: relative; height: 250px; width: 100%; }
+
+        /* صفحات تهمك */
+        .social-footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .social-btn-main {
+            display: inline-flex; align-items: center; gap: 10px; 
+            background: var(--bg-card); border: 1px solid var(--accent-cyan); 
+            padding: 12px 30px; border-radius: 30px; color: var(--text-primary); 
+            font-family: 'Cairo', sans-serif; font-size: 1rem; cursor: pointer; 
+            transition: all 0.3s; font-weight: 600;
+        }
+        .social-btn-main:hover { background: var(--bg-card-hover); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(91, 192, 222, 0.2); }
+        
+        .social-modal-links { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .social-link { 
+            display: flex; align-items: center; gap: 15px; 
+            background: var(--bg-card); padding: 15px 20px; border-radius: 12px; 
+            color: #fff; text-decoration: none; font-size: 1rem; transition: 0.2s;
+            border: 1px solid var(--border-color);
+        }
+        .social-link:hover { transform: translateX(-5px); }
+        .social-link.fb:hover { border-color: #1877F2; background: rgba(24, 119, 242, 0.1); }
+        .social-link.insta:hover { border-color: #E1306C; background: rgba(225, 48, 108, 0.1); }
+        .social-link.tiktok:hover { border-color: #fff; background: rgba(255, 255, 255, 0.1); }
+
+        .footer-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.8; text-shadow: 0 1px 3px rgba(0,0,0,0.8); margin-top: 20px; }
+
+        /* ================== تصميم الدليل الزراعي (داخل النافذة) ================== */
+        .astro-inner-header { text-align: center; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px; margin-bottom: 20px; }
+        .astro-inner-header h2 { color: var(--accent-gold); font-size: 1.4rem; }
+        .astro-inner-header p { color: var(--accent-cyan); font-size: 0.9rem; }
+
+        .qaran-hero { display: grid; grid-template-columns: 1fr; gap: 20px; background: linear-gradient(135deg, #1d2d50 0%, #131b2e 100%); border: 1px solid var(--accent-gold); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        @media (min-width: 768px) { .qaran-hero { grid-template-columns: 1.2fr 1fr; } }
+        .qaran-info h3 { font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 8px; }
+        .qaran-badge { display: inline-block; background: var(--accent-gold); color: #000; font-weight: 700; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 12px; }
+        .saying-box { background: rgba(255, 193, 7, 0.1); border-right: 3px solid var(--accent-gold); padding: 10px 15px; margin: 10px 0; font-style: italic; color: #fff; }
+
+        .countdown-container { display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 15px; border: 1px solid rgba(255,193,7,0.2); }
+        .timer-grid { display: flex; gap: 15px; margin-top: 10px; }
+        .timer-box { text-align: center; background: var(--bg-primary); padding: 10px; border-radius: 8px; min-width: 65px; border: 1px solid var(--border-color); }
+        .timer-num { font-size: 1.5rem; font-weight: 700; color: var(--accent-gold); line-height: 1; }
+        .timer-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+
+        .controls-bar { display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .search-box { position: relative; flex-grow: 1; max-width: 400px; }
+        .search-box input { width: 100%; padding: 10px 40px 10px 15px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; font-family: 'Cairo'; }
+        .search-box i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+
+        .filter-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; transition: all 0.3s ease; font-family: 'Cairo'; }
+        .tab-btn.active, .tab-btn:hover { background: var(--accent-gold); color: #000; font-weight: 700; border-color: var(--accent-gold); }
+
+        .table-wrapper { overflow-x: auto; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); padding: 10px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; text-align: right; font-size: 0.88rem; }
+        th { background-color: rgba(0,0,0,0.3); color: var(--accent-gold); padding: 12px 10px; border: 1px solid var(--border-color); font-weight: 700; white-space: nowrap; }
+        td { padding: 10px; border: 1px solid var(--border-color); vertical-align: middle; }
+        tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
+        tr:hover { background-color: rgba(240, 192, 64, 0.05); cursor: pointer; }
+
+        .season-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+        .season-winter { background: rgba(58, 134, 255, 0.2); color: #3a86ff; }
+        .season-spring { background: rgba(56, 176, 0, 0.2); color: #38b000; }
+        .season-summer { background: rgba(255, 0, 110, 0.2); color: #ff006e; }
+        .season-autumn { background: rgba(251, 86, 7, 0.2); color: #fb5607; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+        .info-list { list-style: none; }
+        .info-list li { margin-bottom: 12px; padding-right: 20px; position: relative; font-size: 0.9rem; }
+        .info-list li::before { content: '\f054'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 0; color: var(--accent-gold); font-size: 0.75rem; top: 4px; }
+
+        /* نافذة تفاصيل المنزلة */
+        #detailModal { z-index: 2000; background: rgba(0,0,0,0.9); }
+        #detailModal .modal-content { max-width: 600px; border-color: var(--accent-gold); }
+        .modal-header-detail { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header-detail h2 { color: var(--accent-gold); }
+        .modal-body-detail p { margin-bottom: 10px; font-size: 0.95rem; }
+        .modal-body-detail strong { color: var(--accent-cyan); }
         
         .loading-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
         .loading-state .spinner { width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--accent-cyan); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .error-state { text-align: center; padding: 20px; color: #e74c3c; font-size: 0.85rem; background: rgba(231, 76, 60, 0.1); border-radius: 10px; }
-        
-        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-secondary); line-height: 1.8; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
 
-    <!-- شريط التحذير اليومي -->
-    <div class="daily-warning" id="warningBar">
-        <div class="warning-icon">⚠️</div>
-        <div class="warning-content">
-            <div class="warning-title">تحذير اليوم</div>
-            <div class="warning-text" id="warningText">جاري تحميل التحذير...</div>
-        </div>
-    </div>
-
     <div class="container">
-        <!-- الهيدر -->
+        <div class="warning-container">
+            <div class="daily-warning" id="warningBar">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-content">
+                    <div class="warning-title">تحذير اليوم</div>
+                    <div class="warning-text" id="warningText">جاري تحميل التحذير...</div>
+                </div>
+            </div>
+            <div class="ncm-warning">
+                <div class="warning-icon" style="animation: none;">🏛️</div>
+                <div class="warning-content">
+                    <div class="warning-title">درجة حرارة مركز الأرصاد الوطني</div>
+                    <div class="warning-text" id="ncmText">جاري تحميل بيانات الأرصاد...</div>
+                </div>
+            </div>
+        </div>
+
         <div class="header">
             <h1>🌤️ طقس خربة أفيق</h1>
             <div class="location">مديرية ميفعة عنس - محافظة ذمار - اليمن</div>
@@ -183,80 +292,234 @@
             <div class="date-badge" id="currentDate">جاري تحميل التاريخ...</div>
         </div>
 
-        <!-- الشريط الفلكي المدمج -->
-        <div class="astro-widget" onclick="openModal('astroModal')">
-            <div class="astro-item"><span class="astro-icon">🌾</span> الشهر: <span id="uiYemeniMonth">...</span></div>
+        <div class="astro-widget" onclick="openAstroModal()">
+            <div class="astro-item"><span class="astro-icon">🌾</span> الزراعي: <span id="uiYemeniMonth">...</span></div>
             <div class="astro-item"><span class="astro-icon">♈</span> البرج: <span id="uiZodiac">...</span></div>
             <div class="astro-item"><span class="astro-icon">🌙</span> المقرانة: <span id="uiMaqran">...</span></div>
         </div>
 
-        <!-- توقعات اليوم والغد -->
         <div class="section-title">📅 توقعات اليوم والغد</div>
         <div class="weather-grid" id="weatherGrid">
             <div class="loading-state" style="grid-column: 1/-1;"><div class="spinner"></div>جاري الاتصال بمركز البيانات...</div>
         </div>
 
-        <!-- المصادر العالمية -->
-        <div class="section-title">🌍 المصادر العالمية</div>
+        <div class="section-title">🌍 المصادر العالمية (نماذج طقس مختلفة)</div>
         <div class="sources-grid" id="sourcesGrid">
-            <button class="source-btn" onclick="loadForecast('YR.no')"><span class="source-icon">❄️</span><span class="source-name">YR.no</span></button>
-            <button class="source-btn active" onclick="loadForecast('Open-Meteo')"><span class="source-icon">☁️</span><span class="source-name">Open-Meteo</span></button>
-            <button class="source-btn" onclick="loadForecast('AccuWeather')"><span class="source-icon">⚙️</span><span class="source-name">AccuWeather</span></button>
-            <button class="source-btn" onclick="loadForecast('Weather.com')"><span class="source-icon">🌧️</span><span class="source-name">Weather.com</span></button>
-            <button class="source-btn" onclick="loadForecast('Windy')"><span class="source-icon">💨</span><span class="source-name">Windy</span></button>
+            <button class="source-btn" onclick="loadForecast('AccuWeather', 'ecmwf_ifs025', this)"><span class="source-name">AccuWeather</span></button>
+            <button class="source-btn" onclick="loadForecast('Ventusky', 'icon_seamless', this)"><span class="source-name">Ventusky</span></button>
+            <button class="source-btn" onclick="loadForecast('Meteoblue', 'gfs_seamless', this)"><span class="source-name">Meteoblue</span></button>
+            <button class="source-btn" onclick="loadForecast('طقس العرب', 'jma_seamless', this)"><span class="source-name">طقس العرب</span></button>
+            <button class="source-btn" onclick="loadForecast('Windy', 'best_match', this)"><span class="source-name">Windy</span></button>
         </div>
 
-        <!-- لوحة التوقعات 10 أيام -->
         <div class="forecast-panel" id="forecastPanel">
-            <div class="forecast-panel-header">
+            <div class="forecast-header">
                 <h3 id="forecastTitle">توقعات 10 أيام</h3>
-                <span class="source-tag" id="forecastSourceTag" style="font-size:0.75rem; background:var(--bg-secondary); padding:4px 12px; border-radius:12px; color:var(--text-secondary);">Open-Meteo</span>
+                <button class="close-forecast" onclick="closeForecast()">&times;</button>
             </div>
             <div class="forecast-list" id="forecastList"></div>
+            
+            <div class="line-chart-container">
+                <h4>📈 منحنى درجات الحرارة (العظمى والصغرى) لـ 10 أيام</h4>
+                <div class="line-chart-wrapper"><canvas id="lineChartCanvas"></canvas></div>
+            </div>
         </div>
 
-        <!-- التذييل -->
-        <div class="footer">
-            تطوير و انشاء الصفحة من قبل / عبد الكريم محمد الاشول
-            <br>
-            <span style="color: var(--accent-gold); font-weight: bold; font-size: 0.9rem;">احتمال الخطاء وارد نرجو أخذ الحيطة و الحذر في فصل الشتاء</span>
+        <!-- زر صفحات تهمك -->
+        <div class="social-footer">
+            <button class="social-btn-main" onclick="openModal('socialModal')">
+                🔗 صفحات تهمك
+            </button>
+            <div class="footer-text">
+                تطوير و انشاء الصفحة من قبل / عبد الكريم محمد الاشول
+                <br>
+                <span style="color: var(--accent-gold); font-weight: bold;">احتمال الخطاء وارد نرجو أخذ الحيطة و الحذر في فصل الشتاء</span>
+            </div>
         </div>
     </div>
 
-    <!-- النافذة المنبثقة: الفلك والمقرانات -->
+    <!-- النافذة المنبثقة: صفحات تهمك -->
+    <div class="modal-overlay" id="socialModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <button class="modal-close" onclick="closeModal('socialModal')">&times;</button>
+            <div class="modal-title">تابع صفحات صاحب البلاد</div>
+            <div class="social-modal-links">
+                <a href="https://www.facebook.com/sahb.alblad.421126?mibextid=ZbWKwL" target="_blank" class="social-link fb">
+                    <i class="fa-brands fa-facebook" style="color: #1877F2; font-size: 1.5rem;"></i> فيسبوك
+                </a>
+                <a href="https://www.instagram.com/alblads?mdxt=Y2cyMGF4MHBocDM0" target="_blank" class="social-link insta">
+                    <i class="fa-brands fa-instagram" style="color: #E1306C; font-size: 1.5rem;"></i> إنستغرام
+                </a>
+                <!-- زر تيك توك (رابط تجريبي كما لم يتم تزويدنا برابط) -->
+                <a href="#" target="_blank" class="social-link tiktok" onclick="alert('قريباً...'); return false;">
+                    <i class="fa-brands fa-tiktok" style="color: #fff; font-size: 1.5rem;"></i> تيك توك
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- النافذة المنبثقة الضخمة: التقويم الفلكي والزراعي -->
     <div class="modal-overlay" id="astroModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('astroModal')">&times;</button>
-            <div class="modal-title">🌙 التقويم الفلكي والزراعي</div>
             
-            <div class="astro-section">
-                <h4>📍 الوضع الحالي</h4>
-                <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>التاريخ الهجري:</strong> <span id="modalHijriDate" style="color: var(--accent-cyan);"></span></p>
-                <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>الشهر الزراعي (الحميري):</strong> <span id="modalYemeniMonth" style="color: var(--accent-gold);"></span></p>
-                <p style="font-size: 0.9rem;"><strong>البرج الفلكي:</strong> <span id="modalZodiac" style="color: var(--accent-blue);"></span></p>
+            <div class="astro-inner-header">
+                <h2>الدليل العملي للتعرف على نجوم المعالم الزراعية والمقارنات في اليمن</h2>
+                <p>إعداد الباحث: يحيى يحيى العنسي | الموروث الفلكي والزراعي</p>
             </div>
 
-            <div class="astro-section">
-                <h4>⏪ المقرانة السابقة</h4>
-                <div class="maqran-list" id="prevMaqranList"></div>
+            <!-- المقارنة القادمة / العداد -->
+            <div class="qaran-hero">
+                <div class="qaran-info">
+                    <span class="qaran-badge"><i class="fa-solid fa-moon"></i> المقارنة القادمة الحالية</span>
+                    <h3 id="currentQaranTitle">قران حادي (11) - بادي</h3>
+                    <p><strong>التاريخ المتوقع:</strong> <span id="currentQaranDate">13 نوفمبر (تشرين ثاني)</span></p>
+                    <p><strong>المنزلة الشرفية:</strong> السراب الأول (الغفر)</p>
+                    <div class="saying-box" id="currentQaranSaying">
+                        "قران حادي بادي.. أول البرد والصرام وربط المواشي"
+                    </div>
+                </div>
+                <div class="countdown-container">
+                    <div style="font-weight: 700; color: var(--accent-gold);"><i class="fa-solid fa-hourglass-half"></i> متبقي على ليلة المقارنة</div>
+                    <div class="timer-grid">
+                        <div class="timer-box"><div class="timer-num" id="days">00</div><div class="timer-label">يوم</div></div>
+                        <div class="timer-box"><div class="timer-num" id="hours">00</div><div class="timer-label">ساعة</div></div>
+                        <div class="timer-box"><div class="timer-num" id="minutes">00</div><div class="timer-label">دقيقة</div></div>
+                        <div class="timer-box"><div class="timer-num" id="seconds">00</div><div class="timer-label">ثانية</div></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="astro-section">
-                <h4>⏩ المقرانات القادمة (6 مقارنات)</h4>
-                <div class="maqran-list" id="nextMaqranList"></div>
+            <!-- أدوات البحث والتصفية -->
+            <div class="controls-bar">
+                <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="ابحث باسم المنزلة، النجم، أو الشهر...">
+                </div>
+                <div class="filter-tabs">
+                    <button class="tab-btn active" onclick="filterSeason('all', this)">الكل (28)</button>
+                    <button class="tab-btn" onclick="filterSeason('شتاء', this)">فصل الشتاء</button>
+                    <button class="tab-btn" onclick="filterSeason('ربيع', this)">فصل الربيع</button>
+                    <button class="tab-btn" onclick="filterSeason('صيف', this)">فصل الصيف</button>
+                    <button class="tab-btn" onclick="filterSeason('خريف', this)">فصل الخريف</button>
+                </div>
             </div>
-            
-            <p style="font-size:0.75rem; color:var(--text-secondary); text-align:center; margin-top:10px;">
-                * المقرانة هي اقتران القمر بالثريا وتحدث في الليالي الفردية من الشهر الهجري.
-            </p>
+
+            <!-- الجدول -->
+            <div class="table-wrapper">
+                <table id="calendarTable">
+                    <thead>
+                        <tr>
+                            <th>رقم</th>
+                            <th>أسماء المنازل الشمسية</th>
+                            <th>أيام</th>
+                            <th>بدء الحلول (ميلادي)</th>
+                            <th>التقويم الرومي</th>
+                            <th>التقويم الحميري</th>
+                            <th>المطالع الفجرية</th>
+                            <th>الوصف والشكل الفلكي</th>
+                            <th>الفصل / المقارنة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- الشروحات -->
+            <div class="grid-2">
+                <div class="card" style="background: var(--bg-card); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color);">
+                    <div class="section-title" style="margin-top: 0; font-size: 1rem;"><i class="fa-solid fa-circle-info"></i> شرح الجدول</div>
+                    <ul class="info-list">
+                        <li><strong>خانات أسماء المنازل (28):</strong> تبدأ من (الغفر) وتنتهي بـ (السماك).</li>
+                        <li><strong>المطالع الفجرية:</strong> بحساب الزراع (مثل: عليم الأول، خماس).</li>
+                        <li><strong>المنازل وأوصافها:</strong> توضيح الهيئة للنجوم وتوسطها في السماء.</li>
+                    </ul>
+                </div>
+                <div class="card" style="background: var(--bg-card); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color);">
+                    <div class="section-title" style="margin-top: 0; font-size: 1rem;"><i class="fa-solid fa-star"></i> آلية المقارنات</div>
+                    <ul class="info-list">
+                        <li><strong>قران حادي (11):</strong> يوافق 13 نوفمبر، أول البرد الشديد.</li>
+                        <li><strong>قران تاسع (9):</strong> يوافق 10 يناير، ليلة التاسع من الشهر القمري.</li>
+                        <li><strong>قران سابع (7):</strong> يوافق 7 مارس، دفء الأرض.</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- نافذة تفاصيل المنزلة (داخل النافذة الكبيرة) -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeDetailModal()">&times;</span>
+            <div class="modal-header-detail">
+                <h2 id="modalTitle">منزلة الغفر</h2>
+                <span id="modalSeason" class="season-tag">الشتاء</span>
+            </div>
+            <div class="modal-body-detail" id="modalBody"></div>
         </div>
     </div>
 
     <script>
+        // ================== بيانات المنازل والمقارنات ==================
+        const starsData = [
+            { id: 1, name: "الغفر", days: 13, startDate: "14 أكتوبر", rumie: "1 تشرين أول", humairi: "1 ذو الصراب الأول", dawnRise: "السماك", eveRise: "أول الفارغ أو الفرغ", desc: "ثلاثة كواكب خفية (رقم 1) على شكل مثلث.", season: "شتاء", qaran: "قران حادي (11)" },
+            { id: 2, name: "الزبانا", days: 13, startDate: "27 أكتوبر", rumie: "14 تشرين أول", humairi: "14 ذو الصراب الأول", dawnRise: "الزبانا", eveRise: "عشاء ربيع كاهل", desc: "كوكبان مضيئان (رقم 2) متفرقين في الشمال والجنوب.", season: "شتاء", qaran: "-" },
+            { id: 3, name: "الإكليل", days: 13, startDate: "9 نوفمبر", rumie: "27 تشرين أول", humairi: "27 ذو الصراب الأول", dawnRise: "الإكليل", eveRise: "عشاء التجمعين", desc: "أربعة كواكب متوسطة النور (رقم 3) على شكل مثلث قاعدته في الغرب.", season: "شتاء", qaran: "قران حادي (11 - بداية)" },
+            { id: 4, name: "القلب", days: 13, startDate: "22 نوفمبر", rumie: "9 تشرين ثاني", humairi: "1 ذو الهلة (الصراب الثاني)", dawnRise: "القلب", eveRise: "عشاء التجمعين (الظلم الأول)", desc: "كوكب أحمر نير بين كوكبين خفيين (رقم 4).", season: "شتاء", qaran: "-" },
+            { id: 5, name: "الشولة", days: 13, startDate: "5 ديسمبر", rumie: "22 تشرين ثاني", humairi: "14 ذو الهلة", dawnRise: "الشولة", eveRise: "عشاء الصلم (الظلم الثاني)", desc: "كوكبان معقوفان على صفة الشوكة (رقم 5).", season: "شتاء", qaran: "قران تاسع (9 - مدخل)" },
+            { id: 6, name: "النعايم", days: 13, startDate: "18 ديسمبر", rumie: "5 كانون أول", humairi: "1 ذو الأول", dawnRise: "النعايم", eveRise: "عشاء العلب", desc: "ثمانية كواكب على شكل النعامة (رقم 6).", season: "شتاء", qaran: "-" },
+            { id: 7, name: "البلدة", days: 13, startDate: "31 ديسمبر", rumie: "18 كانون أول", humairi: "14 ذو الأول", dawnRise: "البلدة", eveRise: "عشاء سهيل", desc: "رقعة خالية من النجوم بين النعايم وسعد الذابح (رقم 7).", season: "شتاء", qaran: "قران تاسع (9)" },
+            { id: 8, name: "سعد الذابح", days: 13, startDate: "13 يناير", rumie: "31 كانون أول", humairi: "1 ذو الدباء", dawnRise: "سعد الذابح", eveRise: "عشاء الروابع الأولى", desc: "كوكبان خفيان على شكل مثلث (رقم 8).", season: "ربيع", qaran: "-" },
+            { id: 9, name: "سعد بلع", days: 13, startDate: "26 يناير", rumie: "13 كانون ثاني", humairi: "14 ذو الدباء", dawnRise: "سعد بلع", eveRise: "عشاء الروابع الثانية", desc: "ثلاثة نجوم صغار لا لمعة لها (رقم 9).", season: "ربيع", qaran: "قران سابع (7)" },
+            { id: 10, name: "سعد السعود", days: 13, startDate: "8 فبراير", rumie: "26 كانون ثاني", humairi: "21 ذو الدباء", dawnRise: "سعد السعود", eveRise: "عشاء خماس الصواب", desc: "كوكبان نيران أحدهما يسمى الخباء (رقم 10).", season: "ربيع", qaran: "-" },
+            { id: 11, name: "سعد الأخبية", days: 13, startDate: "21 فبراير", rumie: "8 شباط", humairi: "1 ذو الحلة (المدى)", dawnRise: "سعد الأخبية", eveRise: "عشاء سادس الصواب", desc: "أربعة كواكب متوسطة النور (رقم 11).", season: "ربيع", qaran: "-" },
+            { id: 12, name: "المقدم", days: 13, startDate: "6 مارس", rumie: "21 شباط", humairi: "14 ذو الحلة", dawnRise: "المقدم", eveRise: "عشاء سبع الأخبية", desc: "كوكبان نيران أحدهما في الشمال (رقم 12).", season: "ربيع", qaran: "قران سابع (7)" },
+            { id: 13, name: "المؤخر", days: 13, startDate: "19 مارس", rumie: "6 آذار", humairi: "1 ذو معون", dawnRise: "المؤخر", eveRise: "ظافر أول (فرافر)", desc: "كوكبان نيران بينهما قدر رمح (رقم 13).", season: "ربيع", qaran: "-" },
+            { id: 14, name: "بطن الحوت", days: 13, startDate: "1 أبريل", rumie: "19 آذار", humairi: "14 ذو معون", dawnRise: "بطن الحوت", eveRise: "ظافر ثاني", desc: "عدة كواكب على شكل سمكة بيضاء (رقم 14).", season: "ربيع", qaran: "-" },
+            { id: 15, name: "الشرطين", days: 13, startDate: "14 أبريل", rumie: "1 نيسان", humairi: "1 ذو الثابة", dawnRise: "الشرطين", eveRise: "غروب الكامة", desc: "كوكبان يميلان إلى الشمال والجنوب (رقم 15).", season: "صيف", qaran: "قران خامس (5)" },
+            { id: 16, name: "البطين", days: 13, startDate: "27 أبريل", rumie: "14 نيسان", humairi: "14 ذو الثابة", dawnRise: "البطين", eveRise: "غروب كامه", desc: "ثلاثة كواكب خفية على شكل مثلث (رقم 16).", season: "صيف", qaran: "-" },
+            { id: 17, name: "الثريا", days: 13, startDate: "10 مايو", rumie: "27 نيسان", humairi: "27 ذو الثابة", dawnRise: "البطين", eveRise: "غروب الثور", desc: "ستة نجوم ظاهرة كعنقود العنب (رقم 17).", season: "صيف", qaran: "قران ثالث (3 - احتراق)" },
+            { id: 18, name: "الدبران", days: 13, startDate: "23 مايو", rumie: "10 أيار", humairi: "10 ذو المبكر", dawnRise: "الثريا", eveRise: "طلوع الكامة جحرا", desc: "كوكب واحد أحمر نير يتبع الثريا (رقم 18).", season: "صيف", qaran: "-" },
+            { id: 19, name: "الهقعة", days: 13, startDate: "5 يونيو", rumie: "23 أيار", humairi: "23 ذو المبكر", dawnRise: "الدبران", eveRise: "طلوع النور", desc: "ثلاثة كواكب خفية قريبة من بعضها (رقم 19).", season: "صيف", qaran: "-" },
+            { id: 20, name: "الهنعة", days: 13, startDate: "18 يونيو", rumie: "5 حزيران", humairi: "1 ذو القياظ (الظلم الأول)", dawnRise: "الهقعة", eveRise: "طلوع النجمين (الظلم الأول)", desc: "كوكبان نيران بينهما شبر (رقم 20).", season: "صيف", qaran: "-" },
+            { id: 21, name: "الذراع", days: 14, startDate: "1 يوليو", rumie: "18 حزيران", humairi: "14 ذو القياظ", dawnRise: "الهنعة", eveRise: "سعد الذابح", desc: "كوكبان نيران مرتفعان في الشمال (رقم 21).", season: "صيف", qaran: "-" },
+            { id: 22, name: "النثرة", days: 13, startDate: "15 يوليو", rumie: "2 تموز", humairi: "1 ذو مذران", dawnRise: "الذراع", eveRise: "سعد بلع", desc: "كوكبان بينهما لطخة سحابية (رقم 22).", season: "خريف", qaran: "قران حادي عشر (1)" },
+            { id: 23, name: "الطرف", days: 13, startDate: "28 يوليو", rumie: "15 تموز", humairi: "14 ذو مذران", dawnRise: "النثرة", eveRise: "سهيل", desc: "كوكبان خفيان متقاربان (رقم 23).", season: "خريف", qaran: "-" },
+            { id: 24, name: "الجبهة", days: 13, startDate: "10 أغسطس", rumie: "28 تموز", humairi: "28 ذو مذران", dawnRise: "الطرف", eveRise: "الروائع الأولى", desc: "أربعة نجوم مضيئة واسعة (رقم 24).", season: "خريف", qaran: "-" },
+            { id: 25, name: "الزبرة", days: 13, startDate: "23 أغسطس", rumie: "10 آب", humairi: "10 ذو الخراف", dawnRise: "الجبهة", eveRise: "الروائع الثانية", desc: "كوكبان نيران متقاربان (رقم 25).", season: "خريف", qaran: "-" },
+            { id: 26, name: "الصرفة", days: 13, startDate: "5 سبتمبر", rumie: "23 آب", humairi: "23 ذو الخراف", dawnRise: "الزبرة", eveRise: "خامس علان", desc: "كوكب واحد نير مفرد (رقم 26).", season: "خريف", qaran: "-" },
+            { id: 27, name: "العواء", days: 13, startDate: "18 سبتمبر", rumie: "5 أيلول", humairi: "1 ذو علان", dawnRise: "الصرفة", eveRise: "سادس علان (سبيت السبعوت)", desc: "أربعة كواكب متعرجة (رقم 27).", season: "خريف", qaran: "-" },
+            { id: 28, name: "السماك", days: 13, startDate: "1 أكتوبر", rumie: "18 أيلول", humairi: "14 ذو علان", dawnRise: "العواء", eveRise: "سابع علان", desc: "كوكب واحد نير أعزل في الشمال (رقم 28).", season: "خريف", qaran: "-" }
+        ];
+
+        const centerTextPlugin = {
+            id: 'centerText',
+            beforeDraw: function(chart) {
+                if (chart.config.options.plugins.centerText) {
+                    var width = chart.width, height = chart.height, ctx = chart.ctx;
+                    ctx.restore();
+                    var fontSize = (height / 100).toFixed(2);
+                    ctx.font = fontSize + "em Cairo";
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = chart.config.options.plugins.centerText.color || "#fff";
+                    var text = chart.config.options.plugins.centerText.text,
+                        textX = Math.round((width - ctx.measureText(text).width) / 2),
+                        textY = height / 2;
+                    ctx.fillText(text, textX, textY);
+                    ctx.save();
+                }
+            }
+        };
+        Chart.register(centerTextPlugin);
+
         const LAT = 14.5500;
         const LON = 44.5833;
         const TIMEZONE = 'Asia/Aden';
-        let cachedData = null;
+        
+        let dataCache = {};
+        let lineChartInstance = null;
+        let countdownInterval = null;
 
         function getFormattedDate(dateObj, short = false) {
             const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -265,35 +528,43 @@
             return `${days[dateObj.getDay()]}، ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
         }
 
-        async function loadDailyWarning() {
-            const warningTextEl = document.getElementById('warningText');
-            const warningBar = document.getElementById('warningBar');
+        function getDayName(dateObj) {
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            return days[dateObj.getDay()];
+        }
+
+        // جلب التحذير والأرصاد
+        async function loadTextFiles() {
             try {
-                const response = await fetch('warning.txt');
-                if (response.ok) {
-                    const text = await response.text();
+                const warnRes = await fetch('warning.txt');
+                if (warnRes.ok) {
+                    const text = await warnRes.text();
                     const parts = text.split('|');
                     if (parts.length === 2) {
-                        warningTextEl.innerText = parts[1].trim();
-                        warningBar.style.borderColor = parts[0].trim();
-                        warningBar.style.backgroundColor = parts[0].trim() + '22';
+                        document.getElementById('warningText').innerText = parts[1].trim();
+                        const bar = document.getElementById('warningBar');
+                        bar.style.borderColor = parts[0].trim();
+                        bar.style.backgroundColor = parts[0].trim() + '22';
                     } else {
-                        warningTextEl.innerText = text;
+                        document.getElementById('warningText').innerText = text;
                     }
                 } else {
-                    warningTextEl.innerText = "لا يوجد تحذير اليوم. يرجى متابعة حالة الطقس.";
+                    document.getElementById('warningText').innerText = "لا يوجد تحذير اليوم. يرجى متابعة حالة الطقس.";
                 }
-            } catch (e) {
-                warningTextEl.innerText = "تعذر تحميل التحذير اليومي. يرجى المحاولة لاحقاً.";
-            }
+            } catch (e) { document.getElementById('warningText').innerText = "تعذر تحميل التحذير اليومي."; }
+
+            try {
+                const ncmRes = await fetch('ncm.txt');
+                if (ncmRes.ok) {
+                    document.getElementById('ncmText').innerText = await ncmRes.text();
+                } else {
+                    document.getElementById('ncmText').innerText = "بانتظار تحديث بيانات الأرصاد...";
+                }
+            } catch (e) { document.getElementById('ncmText').innerText = "بانتظار تحديث بيانات الأرصاد..."; }
         }
 
         // ================= الفلك والمقرانات =================
-        const yemeniMonths = [
-            "ذو الثابة", "ذو الحلة", "ذو معون", "ذو علان", "ذو الصراب", "ذو القعد",
-            "ذو الحجة", "المحرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى"
-        ];
-        
+        const yemeniMonths = ["ذو الثابة", "ذو الحلة", "ذو معون", "ذو علان", "ذو الصراب", "ذو القعد", "ذو الحجة", "المحرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى"];
         const zodiacs = [
             { name: "الحمل", icon: "♈", start: [3, 21], end: [4, 19] }, { name: "الثور", icon: "♉", start: [4, 20], end: [5, 20] },
             { name: "الجوزاء", icon: "♊", start: [5, 21], end: [6, 20] }, { name: "السرطان", icon: "♋", start: [6, 21], end: [7, 22] },
@@ -304,146 +575,192 @@
         ];
 
         function getCurrentAstroStatus() {
-            const today = new Date();
-            const month = today.getMonth(); // 0-11
-            const day = today.getDate();
-            
-            // الشهر الزراعي (تقريبي بناءً على الشهر الميلادي)
+            const today = new Date(); const month = today.getMonth(); const day = today.getDate();
             const yemeniMonth = yemeniMonths[month];
-
-            // البرج الفلكي
             const currentZodiac = zodiacs.find(z => {
-                const [sm, sd] = z.start; const [em, ed] = z.end;
-                const m = month + 1;
+                const [sm, sd] = z.start; const [em, ed] = z.end; const m = month + 1;
                 if (sm <= em) return (m === sm && day >= sd) || (m === em && day <= ed);
                 else return (m === sm && day >= sd) || (m === em && day <= ed);
             }) || zodiacs[0];
-
-            // التاريخ الهجري
+            
             const hijriDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }).format(today);
             const hijriDay = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { day: 'numeric' }).format(today));
-
+            
             return { yemeniMonth, currentZodiac, hijriDate, hijriDay, today };
-        }
-
-        function getMaqranName(day) {
-            const names = {
-                7: "قران السبع", 9: "قران التسع", 11: "قران الإحدى عشر", 13: "قران الثلاثة عشر",
-                15: "قران الخمسة عشر", 17: "قران السابع عشر", 19: "قران التسعة عشر",
-                21: "قران الحادي والعشرين", 23: "قران الثلاثة والعشرين", 25: "قران الخمسة والعشرين", 27: "قران السبعة والعشرين"
-            };
-            return names[day] || `قران الليلة ${day}`;
         }
 
         function initAstroWidget() {
             const status = getCurrentAstroStatus();
-            
-            // تحديث الشريط العلوي
             document.getElementById('uiYemeniMonth').innerText = status.yemeniMonth;
             document.getElementById('uiZodiac').innerText = status.currentZodiac.name;
             
-            // حساب المقرانة القادمة للشريط العلوي
-            const possibleDays = [7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27];
-            let nextDay = possibleDays.find(d => d >= status.hijriDay) || 7;
-            document.getElementById('uiMaqran').innerText = getMaqranName(nextDay);
-
-            // تحديث بيانات النافذة المنبثقة
-            document.getElementById('modalHijriDate').innerText = status.hijriDate;
-            document.getElementById('modalYemeniMonth').innerText = status.yemeniMonth;
-            document.getElementById('modalZodiac').innerText = `${status.currentZodiac.name} ${status.currentZodiac.icon}`;
-
-            // حساب المقرانات السابقة والقادمة
-            renderMaqranList(status.hijriDay, status.today);
+            // المقرانة القادمة للشريط العلوي (نبنيها بناء على بداية أول قران في القائمة)
+            let nextMaq = starsData.find(m => m.qaran !== "-") || starsData[0];
+            document.getElementById('uiMaqran').innerText = nextMaq.qaran;
         }
 
-        function renderMaqranList(currentHijriDay, today) {
-            const possibleDays = [7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27];
-            let prevListHtml = '';
-            let nextListHtml = '';
-
-            // إيجاد المقرانة السابقة
-            let prevDay = null;
-            for (let i = possibleDays.length - 1; i >= 0; i--) {
-                if (possibleDays[i] < currentHijriDay) {
-                    prevDay = possibleDays[i];
-                    break;
-                }
+        // ================= إدارة النوافذ المنبثقة =================
+        function openAstroModal() {
+            document.getElementById('astroModal').classList.add('active');
+            document.body.style.overflow = 'hidden'; // منع التمرير في الخلفية
+            if (!document.getElementById('tableBody').innerHTML) {
+                renderTable(starsData);
             }
-            
-            if (prevDay) {
-                const daysAgo = currentHijriDay - prevDay;
-                prevListHtml = `
-                    <div class="maqran-card prev">
-                        <div class="maqran-info">
-                            <h5>${getMaqranName(prevDay)}</h5>
-                            <p>الليلة ${prevDay} من الشهر الهجري</p>
-                        </div>
-                        <div class="maqran-days">منذ ${daysAgo} أيام</div>
-                    </div>
+            startCountdown();
+        }
+
+        function openModal(id) { 
+            document.getElementById(id).classList.add('active'); 
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal(id) { 
+            document.getElementById(id).classList.remove('active'); 
+            document.body.style.overflow = 'auto';
+            if(id === 'astroModal' && countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+            // لا نعيد التمرير هنا لأن نافذة الفلك ما زالت مفتوحة
+        }
+        
+        window.onclick = function(event) { 
+            if (event.target.classList.contains('modal-overlay') && event.target.id !== 'detailModal') { 
+                event.target.classList.remove('active'); 
+                document.body.style.overflow = 'auto';
+                if(event.target.id === 'astroModal' && countdownInterval) clearInterval(countdownInterval);
+            } 
+        }
+
+        // ================= الدليل الزراعي (الجدول والبحث) =================
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => openDetailModal(item);
+                
+                let seasonClass = 'season-winter';
+                if(item.season === 'ربيع') seasonClass = 'season-spring';
+                if(item.season === 'صيف') seasonClass = 'season-summer';
+                if(item.season === 'خريف') seasonClass = 'season-autumn';
+
+                tr.innerHTML = `
+                    <td><strong>${item.id}</strong></td>
+                    <td><strong style="color:var(--accent-cyan);">${item.name}</strong></td>
+                    <td>${item.days}</td>
+                    <td>${item.startDate}</td>
+                    <td>${item.rumie}</td>
+                    <td>${item.humairi}</td>
+                    <td>${item.dawnRise}</td>
+                    <td style="max-width:150px; font-size:0.8rem; color:var(--text-secondary);">${item.desc}</td>
+                    <td>
+                        <span class="season-tag ${seasonClass}">${item.season}</span>
+                        <div style="font-size:0.75rem; color:var(--accent-gold); margin-top:3px;">${item.qaran}</div>
+                    </td>
                 `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterSeason(season, btn) {
+            document.querySelectorAll('#astroModal .tab-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+
+            if(season === 'all') {
+                renderTable(starsData);
             } else {
-                // المقرانة السابقة كانت في الشهر الماضي
-                prevListHtml = `
-                    <div class="maqran-card prev">
-                        <div class="maqran-info">
-                            <h5>${getMaqranName(27)} (الشهر الماضي)</h5>
-                            <p>الليلة 27 من الشهر الهجري</p>
-                        </div>
-                        <div class="maqran-days">منذ ${currentHijriDay + 3} أيام</div>
-                    </div>
-                `;
+                const filtered = starsData.filter(item => item.season === season);
+                renderTable(filtered);
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const filtered = starsData.filter(item => 
+                item.name.toLowerCase().includes(term) || 
+                item.desc.toLowerCase().includes(term) ||
+                item.startDate.toLowerCase().includes(term) ||
+                item.dawnRise.toLowerCase().includes(term)
+            );
+            renderTable(filtered);
+        });
+
+        function openDetailModal(item) {
+            document.getElementById('modalTitle').innerText = `منزلة ${item.name} (رقم ${item.id})`;
+            const seasonEl = document.getElementById('modalSeason');
+            seasonEl.innerText = `فصل ${item.season}`;
+            
+            let seasonClass = 'season-winter';
+            if(item.season === 'ربيع') seasonClass = 'season-spring';
+            if(item.season === 'صيف') seasonClass = 'season-summer';
+            if(item.season === 'خريف') seasonClass = 'season-autumn';
+            seasonEl.className = `season-tag ${seasonClass}`;
+
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <p><strong>عدد الأيام:</strong> ${item.days} يومًا</p>
+                <p><strong>تاريخ بدء الحلول (ميلادي):</strong> ${item.startDate}</p>
+                <p><strong>التقويم الرومي (السرياني):</strong> ${item.rumie}</p>
+                <p><strong>التقويم الحميري القديم:</strong> ${item.humairi}</p>
+                <p><strong>المطالع الفجرية (معلم الزراع):</strong> ${item.dawnRise}</p>
+                <p><strong>المطالع وقت العشاء:</strong> ${item.eveRise}</p>
+                <p><strong>المقارنة الفلكية المقترنة:</strong> ${item.qaran}</p>
+                <hr style="border-color: var(--border-color); margin: 15px 0;">
+                <p><strong>الوصف والشكل الفلكي:</strong> ${item.desc}</p>
+            `;
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        function startCountdown() {
+            if(countdownInterval) clearInterval(countdownInterval);
+            
+            // حساب تاريخ افتراضي لقران حادي (13 نوفمبر)
+            const targetDate = new Date();
+            let year = targetDate.getFullYear();
+            targetDate.setMonth(10); // November
+            targetDate.setDate(13);
+            targetDate.setHours(20, 0, 0);
+            
+            // إذا كان التاريخ قد مضى، نضيف سنة
+            if(targetDate.getTime() < new Date().getTime()) {
+                targetDate.setFullYear(year + 1);
             }
 
-            // إيجاد الـ 6 مقارنات القادمة
-            let count = 0;
-            // أولاً: البحث في الأيام المتبقية من الشهر الحالي
-            for (let day of possibleDays) {
-                if (day > currentHijriDay && count < 6) {
-                    const daysRemaining = day - currentHijriDay;
-                    nextListHtml += `
-                        <div class="maqran-card next">
-                            <div class="maqran-info">
-                                <h5>${getMaqranName(day)}</h5>
-                                <p>الليلة ${day} من الشهر الحالي</p>
-                            </div>
-                            <div class="maqran-days">باقي ${daysRemaining} أيام</div>
-                        </div>
-                    `;
-                    count++;
+            function update() {
+                const now = new Date();
+                const diff = targetDate - now;
+
+                if (diff <= 0) {
+                    document.getElementById('days').innerText = "00";
+                    document.getElementById('hours').innerText = "00";
+                    document.getElementById('minutes').innerText = "00";
+                    document.getElementById('seconds').innerText = "00";
+                    return;
                 }
+
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const m = Math.floor((diff / 1000 / 60) % 60);
+                const s = Math.floor((diff / 1000) % 60);
+
+                document.getElementById('days').innerText = d < 10 ? '0' + d : d;
+                document.getElementById('hours').innerText = h < 10 ? '0' + h : h;
+                document.getElementById('minutes').innerText = m < 10 ? '0' + m : m;
+                document.getElementById('seconds').innerText = s < 10 ? '0' + s : s;
             }
 
-            // ثانياً: إذا لم نكمل 6، نأخذ من الشهر القادم (تقريباً 29 يوماً)
-            let nextMonthIndex = 0;
-            while (count < 6) {
-                const day = possibleDays[nextMonthIndex];
-                // الأيام المتبقية = (باقي الشهر الحالي) + (اليوم في الشهر القادم)
-                const daysRemaining = (29 - currentHijriDay) + day;
-                nextListHtml += `
-                    <div class="maqran-card next">
-                        <div class="maqran-info">
-                            <h5>${getMaqranName(day)}</h5>
-                            <p>الليلة ${day} من الشهر القادم</p>
-                        </div>
-                        <div class="maqran-days">باقي ${daysRemaining} أيام</div>
-                    </div>
-                `;
-                count++;
-                nextMonthIndex++;
-            }
-
-            document.getElementById('prevMaqranList').innerHTML = prevListHtml;
-            document.getElementById('nextMaqranList').innerHTML = nextListHtml;
+            update();
+            countdownInterval = setInterval(update, 1000);
         }
 
         // ================= الطقس =================
         function getWeatherInfo(code) {
-            const codes = {
-                0: '☀️ صافٍ', 1: '🌤️ صافٍ غالباً', 2: '⛅ غائم جزئياً', 3: '☁️ غائم',
-                45: '🌫️ ضباب', 48: '🌫️ ضباب متجمد', 51: '🌦️ رذاذ خفيف', 53: '🌦️ رذاذ', 55: '🌧️ رذاذ كثيف',
-                61: '🌧️ مطر خفيف', 63: '🌧️ مطر', 65: '🌧️ مطر غزير', 80: '🌦️ زخات مطر', 81: '🌧️ زخات مطر', 82: '⛈️ زخات غزيرة',
-                95: '⛈️ عاصفة رعدية', 96: '⛈️ عاصفة مع برق', 99: '⛈️ عاصفة شديدة'
-            };
+            const codes = { 0: '☀️ صافٍ', 1: '🌤️ صافٍ غالباً', 2: '⛅ غائم جزئياً', 3: '☁️ غائم', 45: '🌫️ ضباب', 48: '🌫️ ضباب متجمد', 51: '🌦️ رذاذ خفيف', 53: '🌦️ رذاذ', 55: '🌧️ رذاذ كثيف', 61: '🌧️ مطر خفيف', 63: '🌧️ مطر', 65: '🌧️ مطر غزير', 80: '🌦️ زخات مطر', 81: '🌧️ زخات مطر', 82: '⛈️ زخات غزيرة', 95: '⛈️ عاصفة رعدية', 96: '⛈️ عاصفة مع برق', 99: '⛈️ عاصفة شديدة' };
             return codes[code] || '🌡️ غير معروف';
         }
 
@@ -452,11 +769,20 @@
             return dirs[Math.round(deg / 45) % 8];
         }
 
-        async function fetchData() {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,dew_point_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant,relative_humidity_2m_max,relative_humidity_2m_min,dew_point_2m_max&timezone=${TIMEZONE}&forecast_days=10&wind_speed_unit=ms`;
+        async function fetchData(model = 'best_match') {
+            if (dataCache[model]) return dataCache[model];
+            let apiModel = model === 'ecmwf_ifs04' ? 'ecmwf_ifs025' : model;
+            
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,dew_point_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant,relative_humidity_2m_max,relative_humidity_2m_min,dew_point_2m_max,apparent_temperature_max&timezone=${TIMEZONE}&forecast_days=10&wind_speed_unit=ms&models=${apiModel}`;
+            
             const response = await fetch(url);
             if (!response.ok) throw new Error('فشل الاتصال');
-            return await response.json();
+            const data = await response.json();
+            
+            if (!data.daily.apparent_temperature_max) data.daily.apparent_temperature_max = [...data.daily.temperature_2m_max];
+            
+            dataCache[model] = data;
+            return data;
         }
 
         function renderCards(data) {
@@ -468,18 +794,38 @@
             const todayIcon = todayInfo[0];
             const todayDesc = todayInfo.slice(1).join(' ');
             const todayHum = Math.round((daily.relative_humidity_2m_max[0] + daily.relative_humidity_2m_min[0]) / 2);
+            
+            const todayMin = Math.round(daily.temperature_2m_min[0]);
+            const todayDayName = getDayName(new Date());
+
+            let todayCardClass = ''; let todayWarn = '';
+            if (todayMin <= 1) { todayCardClass = 'blink-fast'; todayWarn = '<span class="warn-icon">⚠️</span>'; }
+            else if (todayMin <= 5) { todayCardClass = 'blink-slow'; todayWarn = '<span class="warn-icon">⚠️</span>'; }
 
             const tomInfo = getWeatherInfo(daily.weather_code[1]).split(' ');
             const tomIcon = tomInfo[0];
             const tomDesc = tomInfo.slice(1).join(' ');
             const tomHum = Math.round((daily.relative_humidity_2m_max[1] + daily.relative_humidity_2m_min[1]) / 2);
+            
+            const tomMin = Math.round(daily.temperature_2m_min[1]);
+            const tomDayName = getDayName(new Date(Date.now() + 86400000));
+
+            let tomCardClass = ''; let tomWarn = '';
+            if (tomMin <= 1) { tomCardClass = 'blink-fast'; tomWarn = '<span class="warn-icon">⚠️</span>'; }
+            else if (tomMin <= 5) { tomCardClass = 'blink-slow'; tomWarn = '<span class="warn-icon">⚠️</span>'; }
 
             grid.innerHTML = `
-                <div class="weather-card">
-                    <div class="card-header"><span class="day-label">اليوم ${todayIcon}</span><span class="day-date">${getFormattedDate(new Date(), true)}</span></div>
+                <div class="weather-card ${todayCardClass}">
+                    <div class="card-header">
+                        <span class="day-label">اليوم (${todayDayName}) ${todayIcon}</span>
+                        <span class="day-date">${getFormattedDate(new Date(), true)}</span>
+                    </div>
                     <div class="temp-display">
                         <div class="temp-main">${Math.round(current.temperature_2m)}<span class="unit">°C</span></div>
-                        <div class="temp-range"><span class="min">▼ ${Math.round(daily.temperature_2m_min[0])}°</span><span class="max">▲ ${Math.round(daily.temperature_2m_max[0])}°</span></div>
+                        <div class="temp-range">
+                            <span class="min">${todayWarn} الصغرى ${todayMin}°</span>
+                            <span class="max">▲ العظمى ${Math.round(daily.temperature_2m_max[0])}°</span>
+                        </div>
                         <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">${todayDesc}</div>
                     </div>
                     <div class="details-grid">
@@ -489,87 +835,118 @@
                         <div class="detail-item"><span class="detail-icon">🌧️</span><div class="detail-info"><span class="detail-label">احتمال المطر</span><span class="detail-value">${daily.precipitation_probability_max[0] || 0}%</span></div></div>
                     </div>
                 </div>
-                <div class="weather-card">
-                    <div class="card-header"><span class="day-label">غداً ${tomIcon}</span><span class="day-date">${getFormattedDate(new Date(Date.now() + 86400000), true)}</span></div>
+                
+                <div class="weather-card tomorrow-card ${tomCardClass}">
+                    <div class="card-header">
+                        <span class="day-label">غداً (${tomDayName}) ${tomIcon}</span>
+                        <span class="day-date">${getFormattedDate(new Date(Date.now() + 86400000), true)}</span>
+                    </div>
                     <div class="temp-display">
                         <div class="temp-main">${Math.round(daily.temperature_2m_max[1])}<span class="unit">°C</span></div>
-                        <div class="temp-range"><span class="min">▼ ${Math.round(daily.temperature_2m_min[1])}°</span><span class="max">▲ ${Math.round(daily.temperature_2m_max[1])}°</span></div>
-                        <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">${tomDesc}</div>
+                        <div class="temp-range">
+                            <span class="min">${tomWarn} الصغرى ${tomMin}°</span>
+                            <span class="max">▲ العظمى ${Math.round(daily.temperature_2m_max[1])}°</span>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">${tomDesc}</div>
                     </div>
                     <div class="details-grid">
                         <div class="detail-item"><span class="detail-icon">💨</span><div class="detail-info"><span class="detail-label">الرياح</span><span class="detail-value">${Math.round(daily.wind_speed_10m_max[1])} م/ث ${getWindDirection(daily.wind_direction_10m_dominant[1])}</span></div></div>
                         <div class="detail-item"><span class="detail-icon">💧</span><div class="detail-info"><span class="detail-label">الرطوبة</span><span class="detail-value">${tomHum}%</span></div></div>
-                        <div class="detail-item"><span class="detail-icon">🌡️</span><div class="detail-info"><span class="detail-label">نقطة الندى</span><span class="detail-value">${Math.round(daily.dew_point_2m_max[1])}°C</span></div></div>
-                        <div class="detail-item"><span class="detail-icon">🌧️</span><div class="detail-info"><span class="detail-label">احتمال المطر</span><span class="detail-value">${daily.precipitation_probability_max[1] || 0}%</span></div></div>
                     </div>
                 </div>
             `;
         }
 
-        function renderForecast10Days(data, sourceName) {
-            const list = document.getElementById('forecastList');
-            const daily = data.daily;
-            let html = '';
-            for (let i = 0; i < daily.time.length; i++) {
-                const dateObj = new Date(daily.time[i] + 'T00:00:00');
-                const info = getWeatherInfo(daily.weather_code[i]);
-                html += `
-                    <div class="forecast-row">
-                        <div><div class="f-day">${i === 0 ? 'اليوم' : (i === 1 ? 'غداً' : info.split(' ')[1])}</div><div class="f-date">${getFormattedDate(dateObj, true)}</div></div>
-                        <div class="f-temp">${Math.round(daily.temperature_2m_min[i])}° / ${Math.round(daily.temperature_2m_max[i])}°</div>
-                        <div class="f-rain">💧 ${daily.precipitation_probability_max[i] || 0}%</div>
-                        <div class="f-wind">💨 ${Math.round(daily.wind_speed_10m_max[i])} م/ث ${getWindDirection(daily.wind_direction_10m_dominant[i])}</div>
-                        <div style="text-align:center; font-size:1.2rem;">${info.split(' ')[0]}</div>
-                    </div>`;
-            }
-            list.innerHTML = html;
-            document.getElementById('forecastPanel').style.display = 'block';
-            document.getElementById('forecastTitle').innerText = `توقعات 10 أيام — ${sourceName}`;
-            document.getElementById('forecastSourceTag').innerText = sourceName;
-        }
-
-        async function loadForecast(sourceName) {
+        async function loadForecast(sourceName, model, btnElement) {
             document.querySelectorAll('.source-btn').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            document.getElementById('forecastList').innerHTML = '<div class="loading-state"><div class="spinner"></div>جاري التحديث...</div>';
+            if (btnElement) btnElement.classList.add('active');
+
+            const panel = document.getElementById('forecastPanel');
+            const list = document.getElementById('forecastList');
+            const title = document.getElementById('forecastTitle');
+            
+            panel.classList.add('visible');
+            title.innerText = `توقعات 10 أيام — ${sourceName}`;
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">جاري جلب البيانات...</div>';
+
             try {
-                if (!cachedData) cachedData = await fetchData();
-                renderForecast10Days(cachedData, sourceName);
+                const data = await fetchData(model);
+                const daily = data.daily;
+                let html = '';
+
+                for (let i = 0; i < daily.time.length; i++) {
+                    const dateObj = new Date(daily.time[i] + 'T00:00:00');
+                    const dayName = i === 0 ? 'اليوم' : (i === 1 ? 'غداً' : getDayName(dateObj));
+                    const dateStr = getFormattedDate(dateObj, true);
+                    
+                    const maxTemp = Math.round(daily.temperature_2m_max[i]);
+                    const minTemp = Math.round(daily.temperature_2m_min[i]);
+                    const appTemp = Math.round(daily.apparent_temperature_max[i]);
+                    const hum = Math.round((daily.relative_humidity_2m_max[i] + daily.relative_humidity_2m_min[i]) / 2);
+                    const dew = Math.round(daily.dew_point_2m_max[i]);
+                    const wind = Math.round(daily.wind_speed_10m_max[i]);
+                    const icon = getWeatherInfo(daily.weather_code[i]).split(' ')[0];
+
+                    html += `
+                        <div class="forecast-row">
+                            <div>
+                                <div class="f-day">${dayName} ${icon}</div>
+                                <div class="f-date">${dateStr}</div>
+                            </div>
+                            <div class="f-val" style="color: var(--accent-gold);">${maxTemp}° <span>العظمى</span></div>
+                            <div class="f-val" style="color: var(--accent-blue);">${minTemp}° <span>الصغرى</span></div>
+                            <div class="f-val" style="color: #e74c3c;">${appTemp}° <span>المحسوسة</span></div>
+                            <div class="f-val">${hum}% <span>الرطوبة</span></div>
+                            <div class="f-val">${dew}° <span>التكثيف</span></div>
+                            <div class="f-val">${wind} <span>الرياح</span></div>
+                        </div>
+                    `;
+                }
+                list.innerHTML = html;
+
+                // رسم المنحنى
+                const labels = daily.time.map((t, i) => i === 0 ? 'اليوم' : getDayName(new Date(t + 'T00:00:00')).substring(0, 3));
+                if (lineChartInstance) lineChartInstance.destroy();
+                const ctxLine = document.getElementById('lineChartCanvas').getContext('2d');
+                lineChartInstance = new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'العظمى', data: daily.temperature_2m_max.map(t => Math.round(t)), borderColor: '#f0c040', backgroundColor: 'rgba(240, 192, 64, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointBackgroundColor: '#f0c040' },
+                            { label: 'الصغرى', data: daily.temperature_2m_min.map(t => Math.round(t)), borderColor: '#4a90d9', backgroundColor: 'rgba(74, 144, 217, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointBackgroundColor: '#4a90d9' }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#e8edf5', font: { family: 'Cairo' } } } },
+                        scales: {
+                            x: { ticks: { color: '#8b9bb4', font: { family: 'Cairo' } }, grid: { display: false } },
+                            y: { ticks: { color: '#8b9bb4', font: { family: 'Cairo' } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+
             } catch (err) {
-                document.getElementById('forecastList').innerHTML = `<div class="error-state">⚠️ تعذر جلب التوقعات.</div>`;
+                list.innerHTML = `<div style="text-align:center;padding:20px;color:#e74c3c;">⚠️ تعذر جلب التوقعات لهذا المصدر.</div>`;
             }
         }
 
-        // النوافذ
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
-        }
-        function closeModal(id) { 
-            document.getElementById(id).classList.remove('active'); 
-        }
-        window.onclick = function(event) { 
-            if (event.target.classList.contains('modal-overlay')) { 
-                event.target.classList.remove('active'); 
-            } 
+        function closeForecast() {
+            document.getElementById('forecastPanel').classList.remove('visible');
+            document.querySelectorAll('.source-btn').forEach(btn => btn.classList.remove('active'));
         }
 
-        // التشغيل
         async function init() {
             document.getElementById('currentDate').innerText = getFormattedDate(new Date());
-            loadDailyWarning();
+            loadTextFiles();
             initAstroWidget();
             
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,dew_point_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant,relative_humidity_2m_max,relative_humidity_2m_min,dew_point_2m_max&timezone=${TIMEZONE}&forecast_days=10&wind_speed_unit=ms`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (!response.ok) throw new Error('فشل');
-                cachedData = await response.json();
-                renderCards(cachedData);
-                renderForecast10Days(cachedData, 'Open-Meteo');
+                const data = await fetchData('best_match');
+                renderCards(data);
             } catch (err) {
-                document.getElementById('weatherGrid').innerHTML = `<div class="error-state" style="grid-column:1/-1;">⚠️ تعذر الاتصال بخادم الطقس. تأكد من الإنترنت أو أعد تحميل الصفحة.</div>`;
+                document.getElementById('weatherGrid').innerHTML = `<div style="text-align:center;padding:20px;color:#e74c3c;grid-column:1/-1;">⚠️ تعذر الاتصال بخادم الطقس.</div>`;
             }
         }
         window.onload = init;
