@@ -88,18 +88,52 @@
         .header .coords { font-size: 0.8rem; color: var(--text-secondary); direction: ltr; font-family: monospace; opacity: 0.7; }
         .date-badge { display: inline-block; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 20px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; backdrop-filter: blur(4px); }
 
-        /* الشريط الفلكي */
+        /* الشريط الفلكي الجديد (الموسع) */
         .astro-widget {
-            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;
-            background: var(--bg-card); border: 1px solid var(--accent-gold);
-            border-radius: 16px; padding: 15px; margin: 20px 0;
-            cursor: pointer; transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(240, 192, 64, 0.1); backdrop-filter: blur(8px);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 15px;
+            background: var(--bg-card);
+            border: 1px solid var(--accent-gold);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(240, 192, 64, 0.1);
+            backdrop-filter: blur(8px);
         }
+        @media (max-width: 500px) { .astro-widget { grid-template-columns: 1fr; } }
+        
         .astro-widget:hover { background: var(--bg-card-hover); box-shadow: 0 0 20px rgba(240, 192, 64, 0.3); transform: translateY(-2px); }
-        .astro-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; }
-        .astro-item span { color: var(--accent-cyan); }
-        .astro-icon { font-size: 1.3rem; }
+        
+        .astro-data-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px dashed rgba(255,255,255,0.1); 
+            padding-bottom: 5px; 
+            font-size: 0.85rem; 
+        }
+        .astro-data-label { color: var(--text-secondary); }
+        .astro-data-value { color: var(--accent-cyan); font-weight: 600; text-align: left; }
+        
+        /* عبارة اضغط لمعرفة المزيد */
+        .click-more {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: var(--accent-gold);
+            font-weight: 800;
+            font-size: 1rem;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+            animation: pulse-gold 2s infinite;
+        }
+        @keyframes pulse-gold {
+            0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(240, 192, 64, 0.6); }
+            50% { opacity: 0.6; text-shadow: none; }
+        }
 
         /* النوافذ المنبثقة العامة */
         .modal-overlay {
@@ -203,7 +237,6 @@
         .social-link:hover { transform: translateX(-5px); }
         .social-link.fb:hover { border-color: #1877F2; background: rgba(24, 119, 242, 0.1); }
         .social-link.insta:hover { border-color: #E1306C; background: rgba(225, 48, 108, 0.1); }
-        .social-link.tiktok:hover { border-color: #fff; background: rgba(255, 255, 255, 0.1); }
 
         .footer-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.8; text-shadow: 0 1px 3px rgba(0,0,0,0.8); margin-top: 20px; }
 
@@ -211,6 +244,15 @@
         .astro-inner-header { text-align: center; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px; margin-bottom: 20px; }
         .astro-inner-header h2 { color: var(--accent-gold); font-size: 1.4rem; }
         .astro-inner-header p { color: var(--accent-cyan); font-size: 0.9rem; }
+
+        /* بطاقة الأربعينية */
+        .arbaeen-card { background: linear-gradient(135deg, #1d2d50 0%, #131b2e 100%); border: 1px solid var(--accent-blue); border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .arbaeen-card h3 { color: var(--accent-cyan); font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        .arbaeen-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+        .arbaeen-phase { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; text-align: center; font-size: 0.8rem; border: 1px solid var(--border-color); }
+        .arbaeen-phase.active { border-color: var(--accent-gold); background: rgba(240, 192, 64, 0.15); box-shadow: 0 0 10px rgba(240, 192, 64, 0.3); }
+        .arbaeen-phase strong { display: block; color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 3px; }
+        .arbaeen-phase span { display: block; color: var(--text-secondary); font-size: 0.7rem; }
 
         .qaran-hero { display: grid; grid-template-columns: 1fr; gap: 20px; background: linear-gradient(135deg, #1d2d50 0%, #131b2e 100%); border: 1px solid var(--accent-gold); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         @media (min-width: 768px) { .qaran-hero { grid-template-columns: 1.2fr 1fr; } }
@@ -292,10 +334,17 @@
             <div class="date-badge" id="currentDate">جاري تحميل التاريخ...</div>
         </div>
 
+        <!-- الشريط الفلكي الجديد (الموسع) -->
         <div class="astro-widget" onclick="openAstroModal()">
-            <div class="astro-item"><span class="astro-icon">🌾</span> الزراعي: <span id="uiYemeniMonth">...</span></div>
-            <div class="astro-item"><span class="astro-icon">♈</span> البرج: <span id="uiZodiac">...</span></div>
-            <div class="astro-item"><span class="astro-icon">🌙</span> المقرانة: <span id="uiMaqran">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">التاريخ الهجري:</span><span class="astro-data-value" id="uiHijriDate">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">التاريخ الميلادي:</span><span class="astro-data-value" id="uiGregDate">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">الشهر الزراعي (السرياني):</span><span class="astro-data-value" id="uiSyriac">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">التقويم الصنعاني:</span><span class="astro-data-value" id="uiSanaani">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">منزلة الشمس:</span><span class="astro-data-value" id="uiMansion">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">معالم الزراعة:</span><span class="astro-data-value" id="uiMarkers">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">نجوم الزراعة (حضرموت):</span><span class="astro-data-value" id="uiHadhrami">...</span></div>
+            <div class="astro-data-row"><span class="astro-data-label">الفصل الفلكي اليمني:</span><span class="astro-data-value" id="uiSeason">...</span></div>
+            <div class="click-more">اضغط لمعرفة المزيد ⬇️</div>
         </div>
 
         <div class="section-title">📅 توقعات اليوم والغد</div>
@@ -350,10 +399,6 @@
                 <a href="https://www.instagram.com/alblads?mdxt=Y2cyMGF4MHBocDM0" target="_blank" class="social-link insta">
                     <i class="fa-brands fa-instagram" style="color: #E1306C; font-size: 1.5rem;"></i> إنستغرام
                 </a>
-                <!-- زر تيك توك (رابط تجريبي كما لم يتم تزويدنا برابط) -->
-                <a href="#" target="_blank" class="social-link tiktok" onclick="alert('قريباً...'); return false;">
-                    <i class="fa-brands fa-tiktok" style="color: #fff; font-size: 1.5rem;"></i> تيك توك
-                </a>
             </div>
         </div>
     </div>
@@ -366,6 +411,30 @@
             <div class="astro-inner-header">
                 <h2>الدليل العملي للتعرف على نجوم المعالم الزراعية والمقارنات في اليمن</h2>
                 <p>إعداد الباحث: يحيى يحيى العنسي | الموروث الفلكي والزراعي</p>
+            </div>
+
+            <!-- قسم الأربعينية الشتوية (جديد) -->
+            <div class="arbaeen-card" id="arbaeenSection" style="display: none;">
+                <h3>❄️ الأربعينية الشتوية (تبدأ 25 ديسمبر)</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px;">أقسى فترات البرد في اليمن، وتستمر 40 يوماً، وتُقسم إلى أربع مراحل:</p>
+                <div class="arbaeen-grid">
+                    <div class="arbaeen-phase" id="phase-kawalih">
+                        <strong>الكوالح</strong>
+                        <span>25 ديسمبر - 3 يناير</span>
+                    </div>
+                    <div class="arbaeen-phase" id="phase-tawalih">
+                        <strong>الطوالح</strong>
+                        <span>4 يناير - 13 يناير</span>
+                    </div>
+                    <div class="arbaeen-phase" id="phase-muwalih">
+                        <strong>الموالح</strong>
+                        <span>14 يناير - 23 يناير</span>
+                    </div>
+                    <div class="arbaeen-phase" id="phase-sawalih">
+                        <strong>الصوالح</strong>
+                        <span>24 يناير - 2 فبراير</span>
+                    </div>
+                </div>
             </div>
 
             <!-- المقارنة القادمة / العداد -->
@@ -415,7 +484,7 @@
                             <th>أيام</th>
                             <th>بدء الحلول (ميلادي)</th>
                             <th>التقويم الرومي</th>
-                            <th>التقويم الحميري</th>
+                            <th>التقويم الصنعاني</th>
                             <th>المطالع الفجرية</th>
                             <th>الوصف والشكل الفلكي</th>
                             <th>الفصل / المقارنة</th>
@@ -462,35 +531,36 @@
 
     <script>
         // ================== بيانات المنازل والمقارنات ==================
+        // تمت إضافة حقل sanaani (التقويم الصنعاني)
         const starsData = [
-            { id: 1, name: "الغفر", days: 13, startDate: "14 أكتوبر", rumie: "1 تشرين أول", humairi: "1 ذو الصراب الأول", dawnRise: "السماك", eveRise: "أول الفارغ أو الفرغ", desc: "ثلاثة كواكب خفية (رقم 1) على شكل مثلث.", season: "شتاء", qaran: "قران حادي (11)" },
-            { id: 2, name: "الزبانا", days: 13, startDate: "27 أكتوبر", rumie: "14 تشرين أول", humairi: "14 ذو الصراب الأول", dawnRise: "الزبانا", eveRise: "عشاء ربيع كاهل", desc: "كوكبان مضيئان (رقم 2) متفرقين في الشمال والجنوب.", season: "شتاء", qaran: "-" },
-            { id: 3, name: "الإكليل", days: 13, startDate: "9 نوفمبر", rumie: "27 تشرين أول", humairi: "27 ذو الصراب الأول", dawnRise: "الإكليل", eveRise: "عشاء التجمعين", desc: "أربعة كواكب متوسطة النور (رقم 3) على شكل مثلث قاعدته في الغرب.", season: "شتاء", qaran: "قران حادي (11 - بداية)" },
-            { id: 4, name: "القلب", days: 13, startDate: "22 نوفمبر", rumie: "9 تشرين ثاني", humairi: "1 ذو الهلة (الصراب الثاني)", dawnRise: "القلب", eveRise: "عشاء التجمعين (الظلم الأول)", desc: "كوكب أحمر نير بين كوكبين خفيين (رقم 4).", season: "شتاء", qaran: "-" },
-            { id: 5, name: "الشولة", days: 13, startDate: "5 ديسمبر", rumie: "22 تشرين ثاني", humairi: "14 ذو الهلة", dawnRise: "الشولة", eveRise: "عشاء الصلم (الظلم الثاني)", desc: "كوكبان معقوفان على صفة الشوكة (رقم 5).", season: "شتاء", qaran: "قران تاسع (9 - مدخل)" },
-            { id: 6, name: "النعايم", days: 13, startDate: "18 ديسمبر", rumie: "5 كانون أول", humairi: "1 ذو الأول", dawnRise: "النعايم", eveRise: "عشاء العلب", desc: "ثمانية كواكب على شكل النعامة (رقم 6).", season: "شتاء", qaran: "-" },
-            { id: 7, name: "البلدة", days: 13, startDate: "31 ديسمبر", rumie: "18 كانون أول", humairi: "14 ذو الأول", dawnRise: "البلدة", eveRise: "عشاء سهيل", desc: "رقعة خالية من النجوم بين النعايم وسعد الذابح (رقم 7).", season: "شتاء", qaran: "قران تاسع (9)" },
-            { id: 8, name: "سعد الذابح", days: 13, startDate: "13 يناير", rumie: "31 كانون أول", humairi: "1 ذو الدباء", dawnRise: "سعد الذابح", eveRise: "عشاء الروابع الأولى", desc: "كوكبان خفيان على شكل مثلث (رقم 8).", season: "ربيع", qaran: "-" },
-            { id: 9, name: "سعد بلع", days: 13, startDate: "26 يناير", rumie: "13 كانون ثاني", humairi: "14 ذو الدباء", dawnRise: "سعد بلع", eveRise: "عشاء الروابع الثانية", desc: "ثلاثة نجوم صغار لا لمعة لها (رقم 9).", season: "ربيع", qaran: "قران سابع (7)" },
-            { id: 10, name: "سعد السعود", days: 13, startDate: "8 فبراير", rumie: "26 كانون ثاني", humairi: "21 ذو الدباء", dawnRise: "سعد السعود", eveRise: "عشاء خماس الصواب", desc: "كوكبان نيران أحدهما يسمى الخباء (رقم 10).", season: "ربيع", qaran: "-" },
-            { id: 11, name: "سعد الأخبية", days: 13, startDate: "21 فبراير", rumie: "8 شباط", humairi: "1 ذو الحلة (المدى)", dawnRise: "سعد الأخبية", eveRise: "عشاء سادس الصواب", desc: "أربعة كواكب متوسطة النور (رقم 11).", season: "ربيع", qaran: "-" },
-            { id: 12, name: "المقدم", days: 13, startDate: "6 مارس", rumie: "21 شباط", humairi: "14 ذو الحلة", dawnRise: "المقدم", eveRise: "عشاء سبع الأخبية", desc: "كوكبان نيران أحدهما في الشمال (رقم 12).", season: "ربيع", qaran: "قران سابع (7)" },
-            { id: 13, name: "المؤخر", days: 13, startDate: "19 مارس", rumie: "6 آذار", humairi: "1 ذو معون", dawnRise: "المؤخر", eveRise: "ظافر أول (فرافر)", desc: "كوكبان نيران بينهما قدر رمح (رقم 13).", season: "ربيع", qaran: "-" },
-            { id: 14, name: "بطن الحوت", days: 13, startDate: "1 أبريل", rumie: "19 آذار", humairi: "14 ذو معون", dawnRise: "بطن الحوت", eveRise: "ظافر ثاني", desc: "عدة كواكب على شكل سمكة بيضاء (رقم 14).", season: "ربيع", qaran: "-" },
-            { id: 15, name: "الشرطين", days: 13, startDate: "14 أبريل", rumie: "1 نيسان", humairi: "1 ذو الثابة", dawnRise: "الشرطين", eveRise: "غروب الكامة", desc: "كوكبان يميلان إلى الشمال والجنوب (رقم 15).", season: "صيف", qaran: "قران خامس (5)" },
-            { id: 16, name: "البطين", days: 13, startDate: "27 أبريل", rumie: "14 نيسان", humairi: "14 ذو الثابة", dawnRise: "البطين", eveRise: "غروب كامه", desc: "ثلاثة كواكب خفية على شكل مثلث (رقم 16).", season: "صيف", qaran: "-" },
-            { id: 17, name: "الثريا", days: 13, startDate: "10 مايو", rumie: "27 نيسان", humairi: "27 ذو الثابة", dawnRise: "البطين", eveRise: "غروب الثور", desc: "ستة نجوم ظاهرة كعنقود العنب (رقم 17).", season: "صيف", qaran: "قران ثالث (3 - احتراق)" },
-            { id: 18, name: "الدبران", days: 13, startDate: "23 مايو", rumie: "10 أيار", humairi: "10 ذو المبكر", dawnRise: "الثريا", eveRise: "طلوع الكامة جحرا", desc: "كوكب واحد أحمر نير يتبع الثريا (رقم 18).", season: "صيف", qaran: "-" },
-            { id: 19, name: "الهقعة", days: 13, startDate: "5 يونيو", rumie: "23 أيار", humairi: "23 ذو المبكر", dawnRise: "الدبران", eveRise: "طلوع النور", desc: "ثلاثة كواكب خفية قريبة من بعضها (رقم 19).", season: "صيف", qaran: "-" },
-            { id: 20, name: "الهنعة", days: 13, startDate: "18 يونيو", rumie: "5 حزيران", humairi: "1 ذو القياظ (الظلم الأول)", dawnRise: "الهقعة", eveRise: "طلوع النجمين (الظلم الأول)", desc: "كوكبان نيران بينهما شبر (رقم 20).", season: "صيف", qaran: "-" },
-            { id: 21, name: "الذراع", days: 14, startDate: "1 يوليو", rumie: "18 حزيران", humairi: "14 ذو القياظ", dawnRise: "الهنعة", eveRise: "سعد الذابح", desc: "كوكبان نيران مرتفعان في الشمال (رقم 21).", season: "صيف", qaran: "-" },
-            { id: 22, name: "النثرة", days: 13, startDate: "15 يوليو", rumie: "2 تموز", humairi: "1 ذو مذران", dawnRise: "الذراع", eveRise: "سعد بلع", desc: "كوكبان بينهما لطخة سحابية (رقم 22).", season: "خريف", qaran: "قران حادي عشر (1)" },
-            { id: 23, name: "الطرف", days: 13, startDate: "28 يوليو", rumie: "15 تموز", humairi: "14 ذو مذران", dawnRise: "النثرة", eveRise: "سهيل", desc: "كوكبان خفيان متقاربان (رقم 23).", season: "خريف", qaran: "-" },
-            { id: 24, name: "الجبهة", days: 13, startDate: "10 أغسطس", rumie: "28 تموز", humairi: "28 ذو مذران", dawnRise: "الطرف", eveRise: "الروائع الأولى", desc: "أربعة نجوم مضيئة واسعة (رقم 24).", season: "خريف", qaran: "-" },
-            { id: 25, name: "الزبرة", days: 13, startDate: "23 أغسطس", rumie: "10 آب", humairi: "10 ذو الخراف", dawnRise: "الجبهة", eveRise: "الروائع الثانية", desc: "كوكبان نيران متقاربان (رقم 25).", season: "خريف", qaran: "-" },
-            { id: 26, name: "الصرفة", days: 13, startDate: "5 سبتمبر", rumie: "23 آب", humairi: "23 ذو الخراف", dawnRise: "الزبرة", eveRise: "خامس علان", desc: "كوكب واحد نير مفرد (رقم 26).", season: "خريف", qaran: "-" },
-            { id: 27, name: "العواء", days: 13, startDate: "18 سبتمبر", rumie: "5 أيلول", humairi: "1 ذو علان", dawnRise: "الصرفة", eveRise: "سادس علان (سبيت السبعوت)", desc: "أربعة كواكب متعرجة (رقم 27).", season: "خريف", qaran: "-" },
-            { id: 28, name: "السماك", days: 13, startDate: "1 أكتوبر", rumie: "18 أيلول", humairi: "14 ذو علان", dawnRise: "العواء", eveRise: "سابع علان", desc: "كوكب واحد نير أعزل في الشمال (رقم 28).", season: "خريف", qaran: "-" }
+            { id: 1, name: "الغفر", days: 13, startDate: "14 أكتوبر", rumie: "1 تشرين أول", humairi: "1 ذو الصراب الأول", sanaani: "1 الصراب", dawnRise: "السماك", eveRise: "أول الفارغ أو الفرغ", desc: "ثلاثة كواكب خفية (رقم 1) على شكل مثلث.", season: "شتاء", qaran: "قران حادي (11)", hadhrami: "1 الغفر" },
+            { id: 2, name: "الزبانا", days: 13, startDate: "27 أكتوبر", rumie: "14 تشرين أول", humairi: "14 ذو الصراب الأول", sanaani: "14 الصراب", dawnRise: "الزبانا", eveRise: "عشاء ربيع كاهل", desc: "كوكبان مضيئان (رقم 2) متفرقين في الشمال والجنوب.", season: "شتاء", qaran: "-", hadhrami: "14 الزبانا" },
+            { id: 3, name: "الإكليل", days: 13, startDate: "9 نوفمبر", rumie: "27 تشرين أول", humairi: "27 ذو الصراب الأول", sanaani: "27 الصراب", dawnRise: "الإكليل", eveRise: "عشاء التجمعين", desc: "أربعة كواكب متوسطة النور (رقم 3) على شكل مثلث قاعدته في الغرب.", season: "شتاء", qaran: "قران حادي (11 - بداية)", hadhrami: "27 الإكليل" },
+            { id: 4, name: "القلب", days: 13, startDate: "22 نوفمبر", rumie: "9 تشرين ثاني", humairi: "1 ذو الهلة (الصراب الثاني)", sanaani: "1 الهلة", dawnRise: "القلب", eveRise: "عشاء التجمعين (الظلم الأول)", desc: "كوكب أحمر نير بين كوكبين خفيين (رقم 4).", season: "شتاء", qaran: "-", hadhrami: "9 القلب" },
+            { id: 5, name: "الشولة", days: 13, startDate: "5 ديسمبر", rumie: "22 تشرين ثاني", humairi: "14 ذو الهلة", sanaani: "14 الهلة", dawnRise: "الشولة", eveRise: "عشاء الصلم (الظلم الثاني)", desc: "كوكبان معقوفان على صفة الشوكة (رقم 5).", season: "شتاء", qaran: "قران تاسع (9 - مدخل)", hadhrami: "22 الشولة" },
+            { id: 6, name: "النعايم", days: 13, startDate: "18 ديسمبر", rumie: "5 كانون أول", humairi: "1 ذو الأول", sanaani: "27 الهلة", dawnRise: "النعايم", eveRise: "عشاء العلب", desc: "ثمانية كواكب على شكل النعامة (رقم 6).", season: "شتاء", qaran: "-", hadhrami: "5 النعايم" },
+            { id: 7, name: "البلدة", days: 13, startDate: "31 ديسمبر", rumie: "18 كانون أول", humairi: "14 ذو الأول", sanaani: "1 الدباء", dawnRise: "البلدة", eveRise: "عشاء سهيل", desc: "رقعة خالية من النجوم بين النعايم وسعد الذابح (رقم 7).", season: "شتاء", qaran: "قران تاسع (9)", hadhrami: "18 البلدة" },
+            { id: 8, name: "سعد الذابح", days: 13, startDate: "13 يناير", rumie: "31 كانون أول", humairi: "1 ذو الدباء", sanaani: "14 الدباء", dawnRise: "سعد الذابح", eveRise: "عشاء الروابع الأولى", desc: "كوكبان خفيان على شكل مثلث (رقم 8).", season: "ربيع", qaran: "-", hadhrami: "31 سعد الذابح" },
+            { id: 9, name: "سعد بلع", days: 13, startDate: "26 يناير", rumie: "13 كانون ثاني", humairi: "14 ذو الدباء", sanaani: "27 الدباء", dawnRise: "سعد بلع", eveRise: "عشاء الروابع الثانية", desc: "ثلاثة نجوم صغار لا لمعة لها (رقم 9).", season: "ربيع", qaran: "قران سابع (7)", hadhrami: "13 سعد بلع" },
+            { id: 10, name: "سعد السعود", days: 13, startDate: "8 فبراير", rumie: "26 كانون ثاني", humairi: "21 ذو الدباء", sanaani: "1 المدى", dawnRise: "سعد السعود", eveRise: "عشاء خماس الصواب", desc: "كوكبان نيران أحدهما يسمى الخباء (رقم 10).", season: "ربيع", qaran: "-", hadhrami: "26 سعد السعود" },
+            { id: 11, name: "سعد الأخبية", days: 13, startDate: "21 فبراير", rumie: "8 شباط", humairi: "1 ذو الحلة (المدى)", sanaani: "14 المدى", dawnRise: "سعد الأخبية", eveRise: "عشاء سادس الصواب", desc: "أربعة كواكب متوسطة النور (رقم 11).", season: "ربيع", qaran: "-", hadhrami: "8 سعد الأخبية" },
+            { id: 12, name: "المقدم", days: 13, startDate: "6 مارس", rumie: "21 شباط", humairi: "14 ذو الحلة", sanaani: "27 المدى", dawnRise: "المقدم", eveRise: "عشاء سبع الأخبية", desc: "كوكبان نيران أحدهما في الشمال (رقم 12).", season: "ربيع", qaran: "قران سابع (7)", hadhrami: "21 المقدم" },
+            { id: 13, name: "المؤخر", days: 13, startDate: "19 مارس", rumie: "6 آذار", humairi: "1 ذو معون", sanaani: "1 المعون", dawnRise: "المؤخر", eveRise: "ظافر أول (فرافر)", desc: "كوكبان نيران بينهما قدر رمح (رقم 13).", season: "ربيع", qaran: "-", hadhrami: "6 المؤخر" },
+            { id: 14, name: "بطن الحوت", days: 13, startDate: "1 أبريل", rumie: "19 آذار", humairi: "14 ذو معون", sanaani: "14 المعون", dawnRise: "بطن الحوت", eveRise: "ظافر ثاني", desc: "عدة كواكب على شكل سمكة بيضاء (رقم 14).", season: "ربيع", qaran: "-", hadhrami: "19 بطن الحوت" },
+            { id: 15, name: "الشرطين", days: 13, startDate: "14 أبريل", rumie: "1 نيسان", humairi: "1 ذو الثابة", sanaani: "27 المعون", dawnRise: "الشرطين", eveRise: "غروب الكامة", desc: "كوكبان يميلان إلى الشمال والجنوب (رقم 15).", season: "صيف", qaran: "قران خامس (5)", hadhrami: "1 الشرطين" },
+            { id: 16, name: "البطين", days: 13, startDate: "27 أبريل", rumie: "14 نيسان", humairi: "14 ذو الثابة", sanaani: "1 الثابة", dawnRise: "البطين", eveRise: "غروب كامه", desc: "ثلاثة كواكب خفية على شكل مثلث (رقم 16).", season: "صيف", qaran: "-", hadhrami: "14 البطين" },
+            { id: 17, name: "الثريا", days: 13, startDate: "10 مايو", rumie: "27 نيسان", humairi: "27 ذو الثابة", sanaani: "14 الثابة", dawnRise: "البطين", eveRise: "غروب الثور", desc: "ستة نجوم ظاهرة كعنقود العنب (رقم 17).", season: "صيف", qaran: "قران ثالث (3 - احتراق)", hadhrami: "27 الثريا" },
+            { id: 18, name: "الدبران", days: 13, startDate: "23 مايو", rumie: "10 أيار", humairi: "10 ذو المبكر", sanaani: "27 الثابة", dawnRise: "الثريا", eveRise: "طلوع الكامة جحرا", desc: "كوكب واحد أحمر نير يتبع الثريا (رقم 18).", season: "صيف", qaran: "-", hadhrami: "10 الدبران" },
+            { id: 19, name: "الهقعة", days: 13, startDate: "5 يونيو", rumie: "23 أيار", humairi: "23 ذو المبكر", sanaani: "1 المبكر", dawnRise: "الدبران", eveRise: "طلوع النور", desc: "ثلاثة كواكب خفية قريبة من بعضها (رقم 19).", season: "صيف", qaran: "-", hadhrami: "23 الهقعة" },
+            { id: 20, name: "الهنعة", days: 13, startDate: "18 يونيو", rumie: "5 حزيران", humairi: "1 ذو القياظ (الظلم الأول)", sanaani: "14 المبكر", dawnRise: "الهقعة", eveRise: "طلوع النجمين (الظلم الأول)", desc: "كوكبان نيران بينهما شبر (رقم 20).", season: "صيف", qaran: "-", hadhrami: "5 الهنعة" },
+            { id: 21, name: "الذراع", days: 14, startDate: "1 يوليو", rumie: "18 حزيران", humairi: "14 ذو القياظ", sanaani: "27 المبكر", dawnRise: "الهنعة", eveRise: "سعد الذابح", desc: "كوكبان نيران مرتفعان في الشمال (رقم 21).", season: "صيف", qaran: "-", hadhrami: "18 الذراع" },
+            { id: 22, name: "النثرة", days: 13, startDate: "15 يوليو", rumie: "2 تموز", humairi: "1 ذو مذران", sanaani: "1 مذران", dawnRise: "الذراع", eveRise: "سعد بلع", desc: "كوكبان بينهما لطخة سحابية (رقم 22).", season: "خريف", qaran: "قران حادي عشر (1)", hadhrami: "2 النثرة" },
+            { id: 23, name: "الطرف", days: 13, startDate: "28 يوليو", rumie: "15 تموز", humairi: "14 ذو مذران", sanaani: "14 مذران", dawnRise: "النثرة", eveRise: "سهيل", desc: "كوكبان خفيان متقاربان (رقم 23).", season: "خريف", qaran: "-", hadhrami: "15 الطرف" },
+            { id: 24, name: "الجبهة", days: 13, startDate: "10 أغسطس", rumie: "28 تموز", humairi: "28 ذو مذران", sanaani: "27 مذران", dawnRise: "الطرف", eveRise: "الروائع الأولى", desc: "أربعة نجوم مضيئة واسعة (رقم 24).", season: "خريف", qaran: "-", hadhrami: "28 الجبهة" },
+            { id: 25, name: "الزبرة", days: 13, startDate: "23 أغسطس", rumie: "10 آب", humairi: "10 ذو الخراف", sanaani: "1 الخراف", dawnRise: "الجبهة", eveRise: "الروائع الثانية", desc: "كوكبان نيران متقاربان (رقم 25).", season: "خريف", qaran: "-", hadhrami: "10 الزبرة" },
+            { id: 26, name: "الصرفة", days: 13, startDate: "5 سبتمبر", rumie: "23 آب", humairi: "23 ذو الخراف", sanaani: "14 الخراف", dawnRise: "الزبرة", eveRise: "خامس علان", desc: "كوكب واحد نير مفرد (رقم 26).", season: "خريف", qaran: "-", hadhrami: "23 الصرفة" },
+            { id: 27, name: "العواء", days: 13, startDate: "18 سبتمبر", rumie: "5 أيلول", humairi: "1 ذو علان", sanaani: "27 الخراف", dawnRise: "الصرفة", eveRise: "سادس علان (سبيت السبعوت)", desc: "أربعة كواكب متعرجة (رقم 27).", season: "خريف", qaran: "-", hadhrami: "5 العواء" },
+            { id: 28, name: "السماك", days: 13, startDate: "1 أكتوبر", rumie: "18 أيلول", humairi: "14 ذو علان", sanaani: "1 علان", dawnRise: "العواء", eveRise: "سابع علان", desc: "كوكب واحد نير أعزل في الشمال (رقم 28).", season: "خريف", qaran: "-", hadhrami: "18 السماك" }
         ];
 
         const centerTextPlugin = {
@@ -521,88 +591,113 @@
         let lineChartInstance = null;
         let countdownInterval = null;
 
-        function getFormattedDate(dateObj, short = false) {
-            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-            if (short) return `${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-            return `${days[dateObj.getDay()]}، ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-        }
-
-        function getDayName(dateObj) {
-            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            return days[dateObj.getDay()];
-        }
-
-        // جلب التحذير والأرصاد
-        async function loadTextFiles() {
-            try {
-                const warnRes = await fetch('warning.txt');
-                if (warnRes.ok) {
-                    const text = await warnRes.text();
-                    const parts = text.split('|');
-                    if (parts.length === 2) {
-                        document.getElementById('warningText').innerText = parts[1].trim();
-                        const bar = document.getElementById('warningBar');
-                        bar.style.borderColor = parts[0].trim();
-                        bar.style.backgroundColor = parts[0].trim() + '22';
-                    } else {
-                        document.getElementById('warningText').innerText = text;
-                    }
-                } else {
-                    document.getElementById('warningText').innerText = "لا يوجد تحذير اليوم. يرجى متابعة حالة الطقس.";
-                }
-            } catch (e) { document.getElementById('warningText').innerText = "تعذر تحميل التحذير اليومي."; }
-
-            try {
-                const ncmRes = await fetch('ncm.txt');
-                if (ncmRes.ok) {
-                    document.getElementById('ncmText').innerText = await ncmRes.text();
-                } else {
-                    document.getElementById('ncmText').innerText = "بانتظار تحديث بيانات الأرصاد...";
-                }
-            } catch (e) { document.getElementById('ncmText').innerText = "بانتظار تحديث بيانات الأرصاد..."; }
-        }
-
-        // ================= الفلك والمقرانات =================
-        const yemeniMonths = ["ذو الثابة", "ذو الحلة", "ذو معون", "ذو علان", "ذو الصراب", "ذو القعد", "ذو الحجة", "المحرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى"];
-        const zodiacs = [
-            { name: "الحمل", icon: "♈", start: [3, 21], end: [4, 19] }, { name: "الثور", icon: "♉", start: [4, 20], end: [5, 20] },
-            { name: "الجوزاء", icon: "♊", start: [5, 21], end: [6, 20] }, { name: "السرطان", icon: "♋", start: [6, 21], end: [7, 22] },
-            { name: "الأسد", icon: "♌", start: [7, 23], end: [8, 22] }, { name: "العذراء", icon: "♍", start: [8, 23], end: [9, 22] },
-            { name: "الميزان", icon: "♎", start: [9, 23], end: [10, 22] }, { name: "العقرب", icon: "♏", start: [10, 23], end: [11, 21] },
-            { name: "القوس", icon: "♐", start: [11, 22], end: [12, 21] }, { name: "الجدي", icon: "♑", start: [12, 22], end: [1, 19] },
-            { name: "الدلو", icon: "♒", start: [1, 20], end: [2, 18] }, { name: "الحوت", icon: "♓", start: [2, 19], end: [3, 20] }
-        ];
-
-        function getCurrentAstroStatus() {
-            const today = new Date(); const month = today.getMonth(); const day = today.getDate();
-            const yemeniMonth = yemeniMonths[month];
-            const currentZodiac = zodiacs.find(z => {
-                const [sm, sd] = z.start; const [em, ed] = z.end; const m = month + 1;
-                if (sm <= em) return (m === sm && day >= sd) || (m === em && day <= ed);
-                else return (m === sm && day >= sd) || (m === em && day <= ed);
-            }) || zodiacs[0];
+        // دالة مساعدة للبحث عن المنزلة الحالية بناءً على تاريخ اليوم
+        function getCurrentStarData() {
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1; // 1-12
+            const currentDay = today.getDate();
             
-            const hijriDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }).format(today);
-            const hijriDay = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { day: 'numeric' }).format(today));
+            const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
             
-            return { yemeniMonth, currentZodiac, hijriDate, hijriDay, today };
+            let currentStar = starsData[0];
+
+            for (let i = 0; i < starsData.length; i++) {
+                const star = starsData[i];
+                const [dayStr, monthStr] = star.startDate.split(' ');
+                const day = parseInt(dayStr);
+                const monthIndex = monthNames.indexOf(monthStr);
+                
+                let startDate = new Date(today.getFullYear(), monthIndex, day);
+                
+                if (monthIndex > 9 && currentMonth < 4) {
+                    startDate.setFullYear(today.getFullYear() - 1);
+                } else if (monthIndex < 4 && currentMonth > 9) {
+                    startDate.setFullYear(today.getFullYear() + 1);
+                }
+
+                if (today >= startDate) {
+                    currentStar = star;
+                }
+            }
+            return currentStar;
+        }
+
+        // دالة حساب الفصل الفلكي اليمني
+        function getYemeniSeason(month, day) {
+            if ((month === 9 && day >= 14) || month === 10 || month === 11 || (month === 0 && day <= 13)) return "الشتاء";
+            if ((month === 0 && day >= 14) || month === 1 || month === 2 || (month === 3 && day <= 13)) return "الربيع";
+            if ((month === 3 && day >= 14) || month === 4 || month === 5 || (month === 6 && day <= 14)) return "الصيف";
+            return "الخريف";
+        }
+
+        // دالة التحقق من الأربعينية وتحديد المرحلة
+        function checkArbaeen() {
+            const today = new Date();
+            const month = today.getMonth(); // 0-11
+            const day = today.getDate();
+            
+            const arbaeenSection = document.getElementById('arbaeenSection');
+            let isArbaeen = false;
+            let currentPhase = "";
+
+            // الأربعينية تبدأ 25 ديسمبر وتنتهي 2 فبراير
+            if ((month === 11 && day >= 25) || (month === 0 && day <= 31) || (month === 1 && day <= 2)) {
+                isArbaeen = true;
+                
+                if (month === 11 && day >= 25) currentPhase = "kawalih";
+                else if (month === 0 && day >= 4 && day <= 13) currentPhase = "tawalih";
+                else if (month === 0 && day >= 14 && day <= 23) currentPhase = "muwalih";
+                else if ((month === 0 && day >= 24) || (month === 1 && day <= 2)) currentPhase = "sawalih";
+                else if (month === 0 && day >= 1 && day <= 3) currentPhase = "kawalih"; // تداخل أيام
+            }
+
+            if (isArbaeen) {
+                arbaeenSection.style.display = 'block';
+                document.querySelectorAll('.arbaeen-phase').forEach(el => el.classList.remove('active'));
+                if (currentPhase) {
+                    document.getElementById(`phase-${currentPhase}`).classList.add('active');
+                }
+            } else {
+                arbaeenSection.style.display = 'none';
+            }
         }
 
         function initAstroWidget() {
-            const status = getCurrentAstroStatus();
-            document.getElementById('uiYemeniMonth').innerText = status.yemeniMonth;
-            document.getElementById('uiZodiac').innerText = status.currentZodiac.name;
+            const today = new Date();
+            const star = getCurrentStarData();
             
-            // المقرانة القادمة للشريط العلوي (نبنيها بناء على بداية أول قران في القائمة)
-            let nextMaq = starsData.find(m => m.qaran !== "-") || starsData[0];
-            document.getElementById('uiMaqran').innerText = nextMaq.qaran;
+            // 1. التواريخ
+            const hijriDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }).format(today);
+            const gregDate = `${today.getDate()} ${today.toLocaleDateString('ar-EG', { month: 'long' })} ${today.getFullYear()} م`;
+            const syriacDate = star.rumie;
+            const sanaaniDate = star.sanaani; // التقويم الصنعاني
+
+            // 2. منزلة الشمس ومعالمها
+            const mansionStr = `${String(star.id).padStart(2, '0')} ${star.name}`;
+            const markers = star.dawnRise;
+            const hadhrami = star.hadhrami || "غير محدد";
+
+            // 3. الفصل الفلكي اليمني
+            const season = getYemeniSeason(today.getMonth(), today.getDate());
+
+            // تحديث الشريط العلوي
+            document.getElementById('uiHijriDate').innerText = hijriDate;
+            document.getElementById('uiGregDate').innerText = gregDate;
+            document.getElementById('uiSyriac').innerText = syriacDate;
+            document.getElementById('uiSanaani').innerText = sanaaniDate;
+            document.getElementById('uiMansion').innerText = mansionStr;
+            document.getElementById('uiMarkers').innerText = markers;
+            document.getElementById('uiHadhrami').innerText = hadhrami;
+            document.getElementById('uiSeason').innerText = season;
+
+            // فحص الأربعينية
+            checkArbaeen();
         }
 
         // ================= إدارة النوافذ المنبثقة =================
         function openAstroModal() {
             document.getElementById('astroModal').classList.add('active');
-            document.body.style.overflow = 'hidden'; // منع التمرير في الخلفية
+            document.body.style.overflow = 'hidden'; 
             if (!document.getElementById('tableBody').innerHTML) {
                 renderTable(starsData);
             }
@@ -624,7 +719,6 @@
 
         function closeDetailModal() {
             document.getElementById('detailModal').classList.remove('active');
-            // لا نعيد التمرير هنا لأن نافذة الفلك ما زالت مفتوحة
         }
         
         window.onclick = function(event) { 
@@ -655,7 +749,7 @@
                     <td>${item.days}</td>
                     <td>${item.startDate}</td>
                     <td>${item.rumie}</td>
-                    <td>${item.humairi}</td>
+                    <td>${item.sanaani}</td>
                     <td>${item.dawnRise}</td>
                     <td style="max-width:150px; font-size:0.8rem; color:var(--text-secondary);">${item.desc}</td>
                     <td>
@@ -706,7 +800,7 @@
                 <p><strong>عدد الأيام:</strong> ${item.days} يومًا</p>
                 <p><strong>تاريخ بدء الحلول (ميلادي):</strong> ${item.startDate}</p>
                 <p><strong>التقويم الرومي (السرياني):</strong> ${item.rumie}</p>
-                <p><strong>التقويم الحميري القديم:</strong> ${item.humairi}</p>
+                <p><strong>التقويم الصنعاني:</strong> ${item.sanaani}</p>
                 <p><strong>المطالع الفجرية (معلم الزراع):</strong> ${item.dawnRise}</p>
                 <p><strong>المطالع وقت العشاء:</strong> ${item.eveRise}</p>
                 <p><strong>المقارنة الفلكية المقترنة:</strong> ${item.qaran}</p>
@@ -719,14 +813,12 @@
         function startCountdown() {
             if(countdownInterval) clearInterval(countdownInterval);
             
-            // حساب تاريخ افتراضي لقران حادي (13 نوفمبر)
             const targetDate = new Date();
             let year = targetDate.getFullYear();
             targetDate.setMonth(10); // November
             targetDate.setDate(13);
             targetDate.setHours(20, 0, 0);
             
-            // إذا كان التاريخ قد مضى، نضيف سنة
             if(targetDate.getTime() < new Date().getTime()) {
                 targetDate.setFullYear(year + 1);
             }
@@ -759,6 +851,47 @@
         }
 
         // ================= الطقس =================
+        function getFormattedDate(dateObj, short = false) {
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            if (short) return `${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+            return `${days[dateObj.getDay()]}، ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+        }
+
+        function getDayName(dateObj) {
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            return days[dateObj.getDay()];
+        }
+
+        async function loadTextFiles() {
+            try {
+                const warnRes = await fetch('warning.txt');
+                if (warnRes.ok) {
+                    const text = await warnRes.text();
+                    const parts = text.split('|');
+                    if (parts.length === 2) {
+                        document.getElementById('warningText').innerText = parts[1].trim();
+                        const bar = document.getElementById('warningBar');
+                        bar.style.borderColor = parts[0].trim();
+                        bar.style.backgroundColor = parts[0].trim() + '22';
+                    } else {
+                        document.getElementById('warningText').innerText = text;
+                    }
+                } else {
+                    document.getElementById('warningText').innerText = "لا يوجد تحذير اليوم. يرجى متابعة حالة الطقس.";
+                }
+            } catch (e) { document.getElementById('warningText').innerText = "تعذر تحميل التحذير اليومي."; }
+
+            try {
+                const ncmRes = await fetch('ncm.txt');
+                if (ncmRes.ok) {
+                    document.getElementById('ncmText').innerText = await ncmRes.text();
+                } else {
+                    document.getElementById('ncmText').innerText = "بانتظار تحديث بيانات الأرصاد...";
+                }
+            } catch (e) { document.getElementById('ncmText').innerText = "بانتظار تحديث بيانات الأرصاد..."; }
+        }
+
         function getWeatherInfo(code) {
             const codes = { 0: '☀️ صافٍ', 1: '🌤️ صافٍ غالباً', 2: '⛅ غائم جزئياً', 3: '☁️ غائم', 45: '🌫️ ضباب', 48: '🌫️ ضباب متجمد', 51: '🌦️ رذاذ خفيف', 53: '🌦️ رذاذ', 55: '🌧️ رذاذ كثيف', 61: '🌧️ مطر خفيف', 63: '🌧️ مطر', 65: '🌧️ مطر غزير', 80: '🌦️ زخات مطر', 81: '🌧️ زخات مطر', 82: '⛈️ زخات غزيرة', 95: '⛈️ عاصفة رعدية', 96: '⛈️ عاصفة مع برق', 99: '⛈️ عاصفة شديدة' };
             return codes[code] || '🌡️ غير معروف';
@@ -914,7 +1047,7 @@
                         labels: labels,
                         datasets: [
                             { label: 'العظمى', data: daily.temperature_2m_max.map(t => Math.round(t)), borderColor: '#f0c040', backgroundColor: 'rgba(240, 192, 64, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointBackgroundColor: '#f0c040' },
-                            { label: 'الصغرى', data: daily.temperature_2m_min.map(t => Math.round(t)), borderColor: '#4a90d9', backgroundColor: 'rgba(74, 144, 217, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointBackgroundColor: '#4a90d9' }
+                            { label: 'الصغرى', data: daily.temperature_2m_min.map(t => Math.round(t)), borderWidth: 2, tension: 0.4, fill: true, pointBackgroundColor: '#4a90d9', borderColor: '#4a90d9', backgroundColor: 'rgba(74, 144, 217, 0.1)' }
                         ]
                     },
                     options: {
